@@ -23,7 +23,7 @@ from sys import argv
 from datetime import datetime
 import os
 import re
-from prettytable import PrettyTable
+#from prettytable import PrettyTable
 
 ###########################################################################################
 #                                                                                         #
