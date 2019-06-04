@@ -17,6 +17,10 @@ def kill(proc_pid):
 
 
 class Command(object):
+    '''Run Command in the Operating System
+
+       cmd: string - command to run
+       '''
     def __init__(self, cmd):
         self.cmd = cmd
         self.process = None
@@ -27,6 +31,14 @@ class Command(object):
         self.logerrfile = None
 
     def run(self, timeout, logfile=None):
+        '''Run the command provided in constructor
+
+           Parameters
+           ==========
+           timeout: int - (seconds) - how long to wait before killing the command
+           logfile: string - path to file to which to write the std out from running command
+
+           '''
         self.logfile = logfile
 
         def target():

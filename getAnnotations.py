@@ -22,6 +22,12 @@ DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local","spyprot")
 
 
 class AnnotationBase:
+    '''
+       Base class for retrieving annotations for a given PDBID and Chain
+
+       Annotations are parsed from files downloaded from databases and stored locally in:
+       $HOME/.local/spyprot/
+    '''
     def __init__(self, files, pdb, chain='A', data_file_path=DEFAULT_DATA_FILE_PATH, refresh_file_interval=REFRESH_FILE_INTERVAL):
         self.data_file_path = data_file_path
         if not path.exists(data_file_path):
@@ -64,6 +70,20 @@ class AnnotationBase:
 
 
 class getECAnnotation(AnnotationBase):
+    '''Retrieve EC annotations for a given PDBID and Chain
+
+       Annotations are parsed from files downloaded from expasy and stored locally in:
+       $HOME/.local/spyprot/
+
+       Parameters
+       ==========
+       pdbcode: string
+       chain: string
+
+       Return
+       ======
+       results: list of tuples of EC Code and EC name
+       '''
     def __init__(self, pdb, chain='A'):
         super().__init__([PDB_CHAIN_ENZYME, ENZYME_DAT], pdb, chain)
         q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<ec>.*)$')
@@ -117,6 +137,20 @@ class getECAnnotation(AnnotationBase):
 
 
 class getPfamAnnotation(AnnotationBase):
+    '''Retrieve PFAM annotations for a given PDBID and Chain
+
+       Annotations are parsed from files downloaded from pfam and stored locally in:
+       $HOME/.local/spyprot/
+
+       Parameters
+       ==========
+       pdbcode: string
+       chain: string
+
+       Return
+       ======
+       results: list of tuples containing attributes: pdbid, chain, pfam_short, pfam_desc and pfam accession code
+       '''
     def __init__(self,pdb,chain='A'):
         super().__init__([PDB_CHAIN_PFAM, PFAM_DESC], pdb, chain)
         q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<pfam>.*)\t(.*)$', re.M)
@@ -141,6 +175,17 @@ class getPfamAnnotation(AnnotationBase):
 
 
 class getAnnotations:
+    '''Retrieve PFAM annotations for a given PDBID and Chain directly from RCSB
+
+       Parameters
+       ==========
+       pdbcode: string
+       chain: string
+
+       Return
+       ======
+       results: list of tuples containing attributes: pdbid, chain, ..., ..., pfam accession code, pfam_short, pfam_desc, ...
+       '''
     def __init__(self, pdb, chain='A'):
         self.pdb = pdb
         self.chain = chain
@@ -155,12 +200,14 @@ class getAnnotations:
             d = list(r.values())
             d[0] = d[0].lower()
             out.append(d)
-        #out[0] = out[0].lower()    
+        #out[0] = out[0].lower()
         return out
 
 
 if __name__ == '__main__':
     a = getPfamAnnotation("1j85", "A")
+    print(str(a.get()))
+    a = getAnnotations("1j85", "A")
     print(str(a.get()))
     a = getECAnnotation("1cak", "A")
     print(str(a.get()))

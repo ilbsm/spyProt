@@ -18,6 +18,27 @@ cath_uri = \
 
 
 def getCath(pdbcode, chain):
+    '''Retrieve CATH annotations for a given PDBID and Chain
+       Supported attributes:
+       CLASS
+       CATHCODE
+       DOMAIN
+       ARCH
+       TOPOL
+       HOMOL
+
+       Annotations are parsed from a cath-domain-description file downloaded from cathdb and stored locally in:
+       $HOME/.local/spyprot/
+
+       Parameters
+       ==========
+       pdbcode: string
+       chain: string
+
+       Return
+       ======
+       results: list of CATH annotations
+       '''
     if not path.isfile(hcath):
         urllib.request.urlretrieve(cath_uri, hcath_tmp)
         cmd = Command('egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" ' + hcath_tmp + '>' + hcath)

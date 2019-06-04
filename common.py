@@ -2,6 +2,9 @@ import tarfile
 import _pickle
 from os import path, makedirs, listdir
 
+'''Utility methods used by other classes
+   '''
+
 
 def mkDirIfNotExist(dir):
     if not path.exists(dir):

@@ -8,14 +8,23 @@ from os import makedirs
 from xml.dom import minidom
 from lxml import etree
 
-'''
-' Download PDB files from RCSB PDB Database and filter by chain
-' Supports also PDB Bundles when there are many subchains for a given protein
-'
-' example: 
-' PdbFile("1j85", "A", "/tmp").download()
-'''
+
 class PdbFile:
+    '''
+       Download PDB files from RCSB PDB Database and filter by chain
+       Supports also PDB Bundles when there are many subchains for a given protein
+
+       example:
+       PdbFile("1j85", "A", "/tmp").download()
+
+       Parameters
+       ==========
+       code: string - PDB ID
+       chain: string
+       path: string - where to store PDB file
+
+    '''
+
     def __init__(self, code, chain, path):
         self.pdbcode = code
         self.chain = chain
@@ -110,6 +119,18 @@ class PdbFile:
 
 
 class getIdenticalChains:
+    '''
+       Find identical chains to a given one
+
+       example:
+       a = getIdenticalChains("2jlo",chain="A").get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+       chain: string
+    '''
+
     def __init__(self, pdbcode, chain='A'):
         self.pdb = pdbcode.upper()
         self.chain = chain
@@ -124,6 +145,18 @@ class getIdenticalChains:
 
 
 class getSimilarChains:
+    '''
+       Find similar chains to a given one with sequence identity given as parameter
+
+       example:
+       a = getSimilarChains("2jlo",chain="A",identity=90).get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+       chain: string
+       identity: int - (percentage) of sequence identity
+    '''
     def __init__(self, pdb, chain='A', identity=40):
         chain = chain
         url = "http://www.rcsb.org/pdb/rest/sequenceCluster?cluster="+str(identity)+"&structureId="+pdb+"."+chain
@@ -136,11 +169,21 @@ class getSimilarChains:
         except:
             self.items = [pdb.upper()+"."+chain]#.upper()]
 
-    def getChainsArray(self):
+    def get(self):
         return self.items
 
 
 class getUniqChains:
+    '''
+       Find a list of unique chains for a given PDB id
+
+       example:
+       a = getUniqChains("2jlo").get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+    '''
     def __init__(self, pdbcode):
         self.pdb = pdbcode.upper()
         f = urllib.request.urlopen('http://www.rcsb.org/pdb/rest/describeMol?structureId='+self.pdb)
@@ -158,6 +201,10 @@ class getUniqChains:
 
 
 if __name__ == "__main__":
-    a = getSimilarChains("2jlo",chain="A",identity=90).getChainsArray()
+    a = getIdenticalChains("2jlo", chain="A").get()
+    print(a)
+    a = getSimilarChains("2jlo",chain="A",identity=90).get()
+    print(a)
+    a = getUniqChains("2jlo").get()
     print(a)
     p = PdbFile("1j85", "A", "/tmp").download()

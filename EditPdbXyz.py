@@ -5,7 +5,9 @@ import bz2
 
 
 def convertXYZtoPDB(data_xyz,output_gz,start_idx='', stop_idx=''):
-    converted = "" 
+    '''Generate a simple PDB file from a XYZ format containing the 3D coordinates of residues
+       '''
+    converted = ""
     if start_idx!='': start_idx = int(start_idx)
     if stop_idx!='': stop_idx = int(stop_idx)
     if start_idx!='' and stop_idx!='':
