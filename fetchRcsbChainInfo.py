@@ -307,5 +307,7 @@ if __name__ == "__main__":
     print(a)
     a = getUniqChains("2jlo").get()
     print(a)
-    p = PdbFile("1j85", "A", "/tmp").download()
+    p = PdbFile("/tmp","1j85", "A").download()
+    p = MMCIFfile("/tmp", "1j85", "A").download()
     print(fetchReleasedPdbs("2017-10-01"))
+
