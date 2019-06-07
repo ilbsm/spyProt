@@ -4,12 +4,68 @@ import csv
 import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
-from os import makedirs
+from os import makedirs, path
 from xml.dom import minidom
 from lxml import etree
+from Bio.PDB import MMCIFIO, Select
+from Bio.PDB.MMCIFParser import MMCIFParser
+
+class ProteinFile:
+    '''
+       Base classs for download of PDB/CIF files from PDB Database and filter by chain and filter out HOH
+       Supports also PDB Bundles when there are many subchains for a given protein
+    '''
+    def __init__(self, dir, pdbcode, chain=None):
+        self.pdbcode = pdbcode
+        self.chain = chain
+        self.dir = dir
 
 
-class PdbFile:
+class ChainAndResidueSelect(Select):
+    def __init__(self, chain, residue_out="HOH"):
+        self.chain = chain
+        self.residue_out = residue_out
+
+    def accept_chain(self, chain):
+        if chain.id == self.chain:
+            return True
+        else:
+            return False
+
+    def accept_residue(self, residue):
+        if residue.resname != self.residue_out:
+            return True
+        else:
+            return False
+
+
+class MMCIFfile(ProteinFile):
+    def download(self):
+        self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
+        try:
+            makedirs(self.dir)
+        except OSError as e:
+            pass
+        response = urllib.request.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
+        html = response.read().decode("UTF-8")
+        with open(self.cif_file, 'w') as myfile:
+            myfile.write(html)
+        if self.chain is not None:
+            self.filter_by_chain()
+        else:
+            self.out_file = self.cif_file
+        return self.out_file
+
+    def filter_by_chain(self):
+        parser = MMCIFParser()
+        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        io = MMCIFIO()
+        io.set_structure(structure)
+        self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
+        io.save(self.out_file, ChainAndResidueSelect(self.chain))
+
+
+class PdbFile(ProteinFile):
     '''
        Download PDB files from RCSB PDB Database and filter by chain
        Supports also PDB Bundles when there are many subchains for a given protein
@@ -25,15 +81,10 @@ class PdbFile:
 
     '''
 
-    def __init__(self, code, chain, path):
-        self.pdbcode = code
-        self.chain = chain
-        self.path = path
-
     def download(self):
-        pdbFile = self.path + '/' + self.pdbcode + '.pdb'
+        pdbFile = self.dir + '/' + self.pdbcode + '.pdb'
         try:
-            makedirs(self.path)
+            makedirs(self.dir)
         except OSError as e:
             pass
         try:
@@ -47,15 +98,15 @@ class PdbFile:
             print(self.pdbcode + " " + self.chain + " ...trying to download from PDB Bundle")
             response = urllib.request.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
             tar = tarfile.open(fileobj=response, mode="r|gz")
-            tar.extractall(self.path)
+            tar.extractall(self.dir)
             tar.close()
-            mapFile, mapChain = self.parsePdbBundleChainIdFile(self.path + '/' + self.pdbcode.lower() + '-chain-id-mapping.txt')
+            mapFile, mapChain = self.parsePdbBundleChainIdFile(self.dir + '/' + self.pdbcode.lower() + '-chain-id-mapping.txt')
             newChain = mapChain.get(self.chain)
-            pdbBundleFile = self.path + '/' + mapFile.get(self.chain)
+            pdbBundleFile = self.dir + '/' + mapFile.get(self.chain)
             if newChain!=self.chain:
                 self.parsePdbAndTranslateChain(pdbBundleFile, pdbFile, self.chain, newChain)
             else:
-                shutil.move(self.path + '/' + mapFile.get(self.chain),pdbFile)
+                shutil.move(self.dir + '/' + mapFile.get(self.chain),pdbFile)
         return pdbFile
 
     @staticmethod
