@@ -22,18 +22,25 @@ class ProteinFile:
 
 
 class ChainAndResidueSelect(Select):
-    def __init__(self, chain, residue_out="HOH"):
+    def __init__(self, chain, model=1, residue_out="HOH"):
         self.chain = chain
+        self.model = model
         self.residue_out = residue_out
 
+    def accept_model(self, model):
+        if model is None or (model is not None and model.serial_num == self.model):
+            return True
+        else:
+            return False
+
     def accept_chain(self, chain):
-        if chain.id == self.chain:
+        if chain is None or (chain is not None and chain.id == self.chain):
             return True
         else:
             return False
 
     def accept_residue(self, residue):
-        if residue.resname != self.residue_out:
+        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
             return True
         else:
             return False
@@ -307,7 +314,7 @@ if __name__ == "__main__":
     print(a)
     a = getUniqChains("2jlo").get()
     print(a)
-    p = PdbFile("/tmp","1j85", "A").download()
-    p = MMCIFfile("/tmp", "1j85", "A").download()
+    p = PdbFile("/tmp","1k36", "A").download()
+    p = MMCIFfile("/tmp", "1k36", "A").download()
     print(fetchReleasedPdbs("2017-10-01"))
 
