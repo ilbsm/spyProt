@@ -7,7 +7,7 @@ from tqdm import tqdm # completely optional; we might exclude it
 ##############################################################
 # USAGE:
 # generate_mappings(just_pdb_to_uniprot=False) | (dumps to file; checks version and updates automatically; ignores if current)
-# print(PDB_Uniprot("P10970"))                 | (checks mappings in the dump files, accepts PDB ID, PDB ID + " " + Chain, or Uniprot ID; no need to specify)
+# PDB_Uniprot("P10970")                        | (checks mappings in the dump files, accepts PDB ID, PDB ID + " " + Chain, or Uniprot ID; no need to specify)
 
 
 # Help functions
