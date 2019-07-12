@@ -1,3 +1,4 @@
+from fetchPDBinfo import fetchPDBinfo
 from getAnnotations import getPfamAnnotation, getAnnotations, getECAnnotation
 
 
@@ -16,7 +17,6 @@ def test_get_pfam_annotations():
     assert str(a.get()) == "[('1j85', 'A', 'SpoU_methylase', 'SpoU rRNA Methylase family', 'PF00588')]"
 
 
-if __name__ == '__main__':
-    test_get_annotations()
-    test_get_ec_annotations()
-    test_get_pfam_annotations()
+def test_fetch_pdb_info():
+    a = fetchPDBinfo(".", "1uak", "A")
+    assert str(a.getCalfaBreaks()) == '[162, 172]'

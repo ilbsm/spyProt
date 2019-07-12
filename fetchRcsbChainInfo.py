@@ -10,6 +10,7 @@ from lxml import etree
 from Bio.PDB import MMCIFIO, Select
 from Bio.PDB.MMCIFParser import MMCIFParser
 
+
 class ProteinFile:
     '''
        Base classs for download of PDB/CIF files from PDB Database and filter by chain and filter out HOH
