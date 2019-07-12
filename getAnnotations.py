@@ -65,7 +65,7 @@ class AnnotationBase:
                 if path.isfile(enz_file + "_OLD"):
                     os.remove(enz_file + "_OLD")
             except Exception as e:
-                print("Problem updating file: " + enz_file + " leaving old one")
+                print("Problem updating file: " + enz_file + " leaving old one" + str(e))
             if path.isfile(enz_file + ".flg"): os.remove(enz_file + ".flg")
         return enz_file
 
