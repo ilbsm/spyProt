@@ -1,4 +1,4 @@
-from requests import get
+import requests
 import json
 from os.path import isfile
 from tqdm import tqdm # completely optional; we might exclude it
@@ -14,7 +14,7 @@ from tqdm import tqdm # completely optional; we might exclude it
 # Download file with replacament if already same filename locally
 def download_file(url, output_file, headers=""):
     with open(output_file, 'w') as new_local_file:
-            new_local_file.write(get(url, headers=headers).content)
+            new_local_file.write(requests.get(url, headers=headers).content.decode('utf-8'))
 
 def json_dump(input_object, output_file):
     try:
@@ -47,7 +47,8 @@ def PDB_Uniprot_update_list(local_list_file_path="pdb_chain_uniprot.lst", no_dow
         # Load first 100 bytes of the online file to extract its header
         remote_url_headers = {"Range": "bytes=0-100"}
         # Extracting the header (first line)
-        remote_file_header = get(remote_url, headers=remote_url_headers).content.split("\n")[0]
+        remote_file_content = requests.get(remote_url, headers=remote_url_headers).content.decode('utf-8')
+        remote_file_header = remote_file_content.split("\n")[0]
     except:
         print("Cannot establish connection. No remote file under this address.")
         return None
