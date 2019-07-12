@@ -94,7 +94,7 @@ def parse_mapping(local_list_file_path="pdb_chain_uniprot.lst", pdb_to_uniprot=T
         for line in tqdm(raw_mapping):
             mapping[line[0] + " " + line[1]] = line[2]
     else:
-        print("Parsing the PDB => Uniprot mapping")
+        print("Parsing the Uniprot => PDB mapping")
         for line in tqdm(raw_mapping):
             if line[2] in mapping.keys():
                 mapping[line[2]].append(line[0] + " " + line[1])
@@ -161,27 +161,43 @@ def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path="pdb_to_uni_mapping.json
         return False
     
     # If search_key == PDBid: return the list of all available mappings
-    if len(search_key.split()) == 1 and len(search_key) == 4 and 'pdb_to_uni' in locals():
-        matching_chains = [x for x in pdb_to_uni.keys() if x.startswith(search_key)]
-        if len(matching_chains) > 0:
-            matches = [tuple([matching_key, pdb_to_uni[matching_key]]) for matching_key in matching_chains]
-            return matches
+    if len(search_key.split()) == 1 and len(search_key) == 4:
+        if 'pdb_to_uni' in locals():
+            matching_chains = [x for x in pdb_to_uni.keys() if x.startswith(search_key)]
+            if len(matching_chains) > 0:
+                matches = [tuple([matching_key, pdb_to_uni[matching_key]]) for matching_key in matching_chains]
+                return matches
+            else:
+                print("No mapping found for PDB ID:", search_key)
+                return False
         else:
-            print("No mapping found for PDB ID:", search_key)
+            print("Missing PDB => Uniprot mapping.")
             return False
     
     # If search_key == PDBid + " " + Chain: return the only available mapping
-    elif len(search_key.split()) == 2 and len(search_key.split()[0]) == 4 and 'pdb_to_uni' in locals():
-        if search_key in pdb_to_uni.keys():
-            return pdb_to_uni[search_key]
+    elif len(search_key.split()) == 2 and len(search_key.split()[0]) == 4:
+        if 'pdb_to_uni' in locals():
+            if search_key in pdb_to_uni.keys():
+                return pdb_to_uni[search_key]
+            else:
+                print("No mapping found for:", search_key)
+                return False
         else:
-            print("No mapping found for:", search_key)
+            print("Missing PDB => Uniprot mapping.")
             return False
     
     # If search_key == UniprotID: return the list of all mappings
-    elif len(search_key.split()) == 1 and len(search_key) > 4 and 'uni_to_pdb' in locals():
-        if search_key in uni_to_pdb.keys():
-            return uni_to_pdb[search_key]
+    elif len(search_key.split()) == 1 and len(search_key) > 4:
+        if 'uni_to_pdb' in locals():
+            if search_key in uni_to_pdb.keys():
+                return uni_to_pdb[search_key]
+            else:
+                print("No mapping found for Uniprot ID:", search_key)
+                return False
         else:
-            print("No mapping found for Uniprot ID:", search_key)
-            return False
+            print("Missing Uniprot => PDB mapping.")
+    
+    # Incorrect search_key
+    else:
+        print("Incorrect search phrase. Are you sure you're trying to map PDB <=> Uniprot?\nLegal search phrases: 1s72, 1s72 A, P30615")
+        return False
