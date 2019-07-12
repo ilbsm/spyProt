@@ -196,6 +196,7 @@ def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path="pdb_to_uni_mapping.json
                 return False
         else:
             print("Missing Uniprot => PDB mapping.")
+            return False
     
     # Incorrect search_key
     else:
