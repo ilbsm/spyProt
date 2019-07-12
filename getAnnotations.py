@@ -12,10 +12,10 @@ from lxml import etree
 
 REFRESH_FILE_INTERVAL = 15*24*3600 # Refresh every week
 
-PDB_CHAIN_ENZYME = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
-ENZYME_DAT = [ "ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
+PDB_CHAIN_ENZYME = [ "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
+ENZYME_DAT = [ "http://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
 
-PDB_CHAIN_PFAM = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz", "pdb_chain_pfam.tsv.gz" ]
+PDB_CHAIN_PFAM = [ "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz", "pdb_chain_pfam.tsv.gz" ]
 PFAM_DESC = [ "http://pfam.xfam.org/families?output=text", "pdb_chain_pfam_desc" ]
 
 DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local","spyprot")
