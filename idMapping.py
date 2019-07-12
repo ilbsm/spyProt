@@ -86,6 +86,7 @@ def parse_mapping(local_list_file_path="pdb_chain_uniprot.lst", pdb_to_uniprot=T
             raw_mapping = [x.strip().split("\t") for x in raw_mapping.readlines()][1:]
     except:
         print("No local mapping file found. Download it first.")
+        return False
 
     # Create a dictionary with the mapping, depending on the direction
     mapping = dict()
@@ -112,7 +113,6 @@ def generate_mappings(local_file="pdb_chain_uniprot.lst", just_pdb_to_uniprot=Tr
         PDB_Uniprot_update_list(local_list_file_path=local_file)
 
         # Generate new mappings
-
         json_dump(parse_mapping(pdb_to_uniprot=True), pdb_to_uni_mapping_path)
 
         if not just_pdb_to_uniprot:
