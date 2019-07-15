@@ -12,10 +12,10 @@ from lxml import etree
 
 REFRESH_FILE_INTERVAL = 15*24*3600 # Refresh every week
 
-PDB_CHAIN_ENZYME = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
-ENZYME_DAT = [ "ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
+PDB_CHAIN_ENZYME = [ "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
+ENZYME_DAT = [ "http://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
 
-PDB_CHAIN_PFAM = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz", "pdb_chain_pfam.tsv.gz" ]
+PDB_CHAIN_PFAM = [ "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz", "pdb_chain_pfam.tsv.gz" ]
 PFAM_DESC = [ "http://pfam.xfam.org/families?output=text", "pdb_chain_pfam_desc" ]
 
 DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local","spyprot")
@@ -52,6 +52,7 @@ class AnnotationBase:
     def download_if_not_exist(self, file_locs):
         enz_file = path.join(self.data_file_path, file_locs[1])
         if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(enz_file) and datetime.datetime.now().timestamp()-os.stat(enz_file).st_mtime > self.refresh_file_interval):
+            print('downloading file: ' + enz_file + " from: "  + file_locs[0])
             AnnotationBase.touch(enz_file + ".flg")
             try:
                 f = urllib.request.urlopen(file_locs[0])
@@ -64,7 +65,7 @@ class AnnotationBase:
                 if path.isfile(enz_file + "_OLD"):
                     os.remove(enz_file + "_OLD")
             except Exception as e:
-                print("Problem updating file: " + enz_file + " leaving old one")
+                print("Problem updating file: " + enz_file + " leaving old one" + str(e))
             if path.isfile(enz_file + ".flg"): os.remove(enz_file + ".flg")
         return enz_file
 
