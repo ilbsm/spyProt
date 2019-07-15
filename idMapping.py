@@ -13,10 +13,12 @@ from tqdm import tqdm # completely optional; we might exclude it
 # Help functions
 # Download file with replacament if already same filename locally
 def download_file(url, output_file, headers=""):
+    """Downloads file from the web. Doesn't check for overwrites."""
     with open(output_file, 'w') as new_local_file:
             new_local_file.write(requests.get(url, headers=headers).content.decode('utf-8'))
 
 def json_dump(input_object, output_file):
+    """Dumps the input Python object to a .json file using the JSON module. Doesn't check for overwrites."""
     try:
         with open(output_file, 'w') as outf:
             json.dump(input_object, outf)
@@ -26,6 +28,7 @@ def json_dump(input_object, output_file):
         return False
 
 def json_load(input_file):
+    """Loads a previously dumped Python object from a .json file using the JSON module."""
     try:
         with open(input_file, 'r') as inpf:
             loaded = json.load(inpf)
@@ -41,6 +44,11 @@ def json_load(input_file):
 # If no local file we return Fale.
 # If you just want to check, best to set no_download to True
 def PDB_Uniprot_update_list(local_list_file_path="pdb_chain_uniprot.lst", no_download=False):
+    """Two-way mapping between PDB ID and Uniprot IDs.
+        1. It checks whether the local version of the mapping file is the most recent and replaces it otherwise.
+        2. The returned value (T/F) reports whether the local file is up to date with the remote file.
+       If it returns None it means that the online file could not be located. If no local file found, return False.
+       Used with the no_download=True option can serve to check version of the file without updating."""
     try:
         # Constant URL for periodically updated PDB<=>Uniprot mappings
         remote_url = "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/text/pdb_chain_uniprot.lst"
@@ -108,6 +116,7 @@ def parse_mapping(local_list_file_path="pdb_chain_uniprot.lst", pdb_to_uniprot=T
 # Generates mappings if a more recent version can be found and saves them to file
 # Returns True if generated anything, returns False if nothing has been generated
 def generate_mappings(local_file="pdb_chain_uniprot.lst", just_pdb_to_uniprot=True, pdb_to_uni_mapping_path="pdb_to_uni_mapping.json", uni_to_pdb_mapping_path="uni_to_pdb_mapping.json"):
+    """Generates .json dump files containing Python dictionaries with PDB ID=>Uniprot ID and Uniprot ID=>PDB ID mappings."""
     # Check if up to date without downloading first
     if not PDB_Uniprot_update_list(local_list_file_path=local_file, no_download=True):
         # If not, download
@@ -136,11 +145,12 @@ def generate_mappings(local_file="pdb_chain_uniprot.lst", just_pdb_to_uniprot=Tr
         return False
 
 # Look up mapping PDB <=> Uniprot
-# Search_key can be either a PDBid, a "PDBid Chain" pair or a Uniprot ID; no need to signal it to the function, it recognizes it automatically.
-# If search_key == PDBid: return the list of all available mappings
-# If search_key == PDBid + " " + Chain: return the only available mapping
-# If search_key == UniprotID: return the list of all mappings
 def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path="pdb_to_uni_mapping.json", uniprot_to_pdb_mapping_path="uni_to_pdb_mapping.json"):
+    """Performs lookup in the .json-dumped dictionaries with mappings, both PDB => Uniprot and Uniprot => PDB.
+    Search_key can be either a PDBid, a "PDBid Chain" pair or a Uniprot ID; no need to signal it to the function, it recognizes it automatically.
+    If search_key == PDBid: return the list of all available mappings
+    If search_key == PDBid + " " + Chain: return the only available mapping
+    If search_key == UniprotID: return the list of all mappings"""
     if isfile(pdb_to_uniprot_mapping_path):
         try:
             # load PDB => Uniprot mapping
