@@ -7,7 +7,7 @@ import urllib.request, urllib.error, urllib.parse
 from os import makedirs, path
 from xml.dom import minidom
 from lxml import etree
-from Bio.PDB import MMCIFIO, Select
+from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
 from Bio.PDB.MMCIFParser import MMCIFParser
 
 
@@ -16,10 +16,12 @@ class ProteinFile:
        Base classs for download of PDB/CIF files from PDB Database and filter by chain and filter out HOH
        Supports also PDB Bundles when there are many subchains for a given protein
     '''
-    def __init__(self, dir, pdbcode, chain=None):
+
+    def __init__(self, dir, pdbcode, chain=None, atom=None):
         self.pdbcode = pdbcode
         self.chain = chain
         self.dir = dir
+        self.atom = atom
 
 
 class ChainAndResidueSelect(Select):
@@ -47,6 +49,50 @@ class ChainAndResidueSelect(Select):
             return False
 
 
+class ChainSelect(Select):
+    def __init__(self, chain, model=1, residue_out="HOH"):
+        self.chain = chain
+        self.model = model
+        self.residue_out = residue_out
+
+    def accept_chain(self, chain):
+        if chain is None or (chain is not None and chain.id == self.chain):
+            return True
+        else:
+            return False
+
+    def accept_residue(self, residue):
+        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
+            return True
+        else:
+            return False
+
+
+class ChainAndAtomSelect(Select):
+    def __init__(self, chain, model=1, residue_out="HOH", atom='CA'):
+        self.chain = chain
+        self.model = model
+        self.residue_out = residue_out
+        self.atom = atom
+
+    def accept_chain(self, chain):
+        if chain is None or (chain is not None and chain.id == self.chain):
+            return True
+        else:
+            return False
+
+    def accept_residue(self, residue):
+        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
+            return True
+        else:
+            return False
+
+    def accept_atom(self, atom):
+        if atom is None or (atom is not None and atom.get_name() == self.atom):
+            return True
+        else:
+            return False
+
 class MMCIFfile(ProteinFile):
     def download(self):
         self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
@@ -70,7 +116,7 @@ class MMCIFfile(ProteinFile):
         io = MMCIFIO()
         io.set_structure(structure)
         self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
-        io.save(self.out_file, ChainAndResidueSelect(self.chain))
+        io.save(self.out_file, ChainSelect(self.chain))
 
 
 class PdbFile(ProteinFile):
@@ -90,7 +136,7 @@ class PdbFile(ProteinFile):
     '''
 
     def download(self):
-        pdbFile = self.dir + '/' + self.pdbcode + '.pdb'
+        self.out_file = self.dir + '/' + self.pdbcode + '.pdb'
         try:
             makedirs(self.dir)
         except OSError as e:
@@ -98,10 +144,10 @@ class PdbFile(ProteinFile):
         try:
             response = urllib.request.urlopen('https://files.rcsb.org/view/' + self.pdbcode.upper() + '.pdb')
             html = response.read().decode("UTF-8")
-            with open(pdbFile, 'w') as myfile:
+            with open(self.out_file, 'w') as myfile:
                 myfile.write(html)
             if self.chain is not None:
-                pdbFile = self.filter_by_chain(pdbFile, self.chain)
+                self.filter_by_chain()
         except urllib.error.HTTPError as e:
             print(self.pdbcode + " " + self.chain + " ...trying to download from PDB Bundle")
             response = urllib.request.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
@@ -112,10 +158,12 @@ class PdbFile(ProteinFile):
             newChain = mapChain.get(self.chain)
             pdbBundleFile = self.dir + '/' + mapFile.get(self.chain)
             if newChain!=self.chain:
-                self.parsePdbAndTranslateChain(pdbBundleFile, pdbFile, self.chain, newChain)
+                self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
             else:
-                shutil.move(self.dir + '/' + mapFile.get(self.chain),pdbFile)
-        return pdbFile
+                shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
+        if self.atom:
+            self.filter_by_atom()
+        return self.out_file
 
     @staticmethod
     def parsePdbBundleChainIdFile(chainFile):
@@ -144,9 +192,10 @@ class PdbFile(ProteinFile):
             return mapFile, mapChain
 
     # Remapping chain for PDB bundles with many subchains
-    def parsePdbAndTranslateChain(pdbFileIn,pdbFileOut,chain,newChain):
+    def parsePdbAndTranslateChain(self, pdbFileIn, chain, newChain):
         #print chain + '->' + newChain
-        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(pdbFileOut, "w", encoding='utf-8') as outfile:
+        self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
+        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(self.out_file, "w", encoding='utf-8') as outfile:
             reader = csv.reader(infile)
             for i, line in enumerate(reader):
                 if line[0].find('ATOM')==0 or line[0].find('HETATM')==0:
@@ -164,17 +213,60 @@ class PdbFile(ProteinFile):
                 else:
                     outfile.write(line[0] + "\n")
 
-    @staticmethod
-    def filter_by_chain(pdbfile, chain):
-        pdbfile_out = pdbfile.replace(".pdb", "_" + chain + ".pdb")
-        with open(pdbfile_out, "w") as outfile, open(pdbfile) as file:
-            for _, line in enumerate(file):
-                if line.startswith("ATOM") or line.startswith("TER"):
-                    if str(line[21]) == chain:
-                        outfile.write(line)
-                else:
-                    outfile.write(line)
-        return pdbfile_out
+    def filter_by_chain(self):
+        parser = PDBParser()
+        structure = parser.get_structure(self.pdbcode, self.out_file)
+        io = PDBIO()
+        io.set_structure(structure)
+        self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
+        io.save(self.out_file, ChainAndResidueSelect(self.chain))
+        del io
+
+    def filter_by_atom(self):
+        parser = PDBParser()
+        structure = parser.get_structure(self.pdbcode, self.out_file)
+        io = PDBIO()
+        io.set_structure(structure)
+        self.out_file = self.out_file.replace(".pdb", "_" + self.atom + ".pdb")
+        io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
+        del io
+
+
+class MMCIFfile(ProteinFile):
+    def download(self):
+        self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
+        try:
+            makedirs(self.dir)
+        except OSError as e:
+            pass
+        response = urllib.request.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
+        html = response.read().decode("UTF-8")
+        with open(self.cif_file, 'w') as myfile:
+            myfile.write(html)
+        if self.chain is not None:
+            self.filter_by_chain()
+        else:
+            self.out_file = self.cif_file
+        if self.atom:
+            self.filter_by_atom()
+        return self.out_file
+
+    def filter_by_chain(self):
+        parser = MMCIFParser()
+        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        io = MMCIFIO()
+        io.set_structure(structure)
+        self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
+        io.save(self.out_file, ChainAndResidueSelect(self.chain))
+
+    def filter_by_atom(self):
+        parser = MMCIFParser()
+        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        io = MMCIFIO()
+        io.set_structure(structure)
+        self.out_file = self.out_file.replace(".cif", "_" + self.atom + ".cif")
+        io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
+        del io
 
 
 class getIdenticalChains:
@@ -315,7 +407,19 @@ if __name__ == "__main__":
     print(a)
     a = getUniqChains("2jlo").get()
     print(a)
-    p = PdbFile("/tmp","1k36", "A").download()
-    p = MMCIFfile("/tmp", "1k36", "A").download()
-    print(fetchReleasedPdbs("2017-10-01"))
+    p = PdbFile("/tmp", "1k36", "A").download()
+    p = PdbFile("/tmp","1k36", "A", 'CA').download()
+    #p = MMCIFfile("/tmp", "1k36", "A").download()
+
+    # Download and extract chain 5
+    #p = PdbFile("/tmp", "6p5i", "5").download()
+    # Download and extract only C3' atoms from chain 5
+    #p = PdbFile("/tmp", "6p5i", "5", 'C3\'').download()
+
+    #m = MMCIFfile("/tmp", "1k36", "A").download()
+    # Download and extract chain 5
+    #m = MMCIFfile("/tmp", "6p5i", "5").download()
+    # Download and extract only C3' atoms from chain 5
+    m = MMCIFfile("/tmp", "6p5i", "5", 'C3\'').download()
+    #print(fetchReleasedPdbs("2017-10-01"))
 
