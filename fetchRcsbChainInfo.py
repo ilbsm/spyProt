@@ -400,26 +400,4 @@ def fetchReleasedPdbs(from_date, to_date=''):
         return False
 
 
-if __name__ == "__main__":
-    a = getIdenticalChains("2jlo", chain="A").get()
-    print(a)
-    a = getSimilarChains("2jlo",chain="A",identity=90).get()
-    print(a)
-    a = getUniqChains("2jlo").get()
-    print(a)
-    p = PdbFile("/tmp", "1k36", "A").download()
-    p = PdbFile("/tmp","1k36", "A", 'CA').download()
-    #p = MMCIFfile("/tmp", "1k36", "A").download()
-
-    # Download and extract chain 5
-    #p = PdbFile("/tmp", "6p5i", "5").download()
-    # Download and extract only C3' atoms from chain 5
-    #p = PdbFile("/tmp", "6p5i", "5", 'C3\'').download()
-
-    #m = MMCIFfile("/tmp", "1k36", "A").download()
-    # Download and extract chain 5
-    #m = MMCIFfile("/tmp", "6p5i", "5").download()
-    # Download and extract only C3' atoms from chain 5
-    m = MMCIFfile("/tmp", "6p5i", "5", 'C3\'').download()
-    #print(fetchReleasedPdbs("2017-10-01"))
 
