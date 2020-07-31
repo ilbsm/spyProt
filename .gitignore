@@ -1,0 +1,14 @@
+_skbuild
+spyprot.egg-info
+spyprot.egg-info/*
+dist
+*.so
+*.pyc
+*.swp
+*.iml
+*.log
+.idea
+.pytest_cache
+venv
+__pycache__
+*.py~

@@ -1,4 +1,4 @@
-from fetchRcsbChainInfo import getIdenticalChains, getSimilarChains, getUniqChains
+from spyprot.fetchRcsbChainInfo import getIdenticalChains, getSimilarChains, getUniqChains
 
 a = getIdenticalChains("2jlo", chain="A").get()
 print(a)

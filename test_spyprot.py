@@ -1,5 +1,7 @@
-from fetchPDBinfo import fetchPDBinfo
-from getAnnotations import getPfamAnnotation, getAnnotations, getECAnnotation
+import warnings
+
+from spyprot.fetchPDBinfo import fetchPDBinfo
+from spyprot.getAnnotations import getPfamAnnotation, getAnnotations, getECAnnotation
 
 
 def test_get_annotations():
@@ -18,5 +20,12 @@ def test_get_pfam_annotations():
 
 
 def test_fetch_pdb_info():
-    a = fetchPDBinfo(".", "1uak", "A")
-    assert str(a.getCalfaBreaks()) == '[162, 172]'
+    from Bio import BiopythonExperimentalWarning
+    import tempfile
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', BiopythonExperimentalWarning)
+        a = fetchPDBinfo(tempfile.gettempdir(), "1uak", "A")
+        assert str(a.getCalfaBreaks()) == '[162, 172]'
+
+
+

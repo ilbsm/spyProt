@@ -5,7 +5,7 @@ import urllib.error
 import urllib.request
 from os import path
 from re import compile
-import Command
+from spyprot import Command
 import os
 
 DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local", "spyprot")

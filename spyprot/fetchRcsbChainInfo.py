@@ -93,31 +93,6 @@ class ChainAndAtomSelect(Select):
         else:
             return False
 
-class MMCIFfile(ProteinFile):
-    def download(self):
-        self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
-        try:
-            makedirs(self.dir)
-        except OSError as e:
-            pass
-        response = urllib.request.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
-        html = response.read().decode("UTF-8")
-        with open(self.cif_file, 'w') as myfile:
-            myfile.write(html)
-        if self.chain is not None:
-            self.filter_by_chain()
-        else:
-            self.out_file = self.cif_file
-        return self.out_file
-
-    def filter_by_chain(self):
-        parser = MMCIFParser()
-        structure = parser.get_structure(self.pdbcode, self.cif_file)
-        io = MMCIFIO()
-        io.set_structure(structure)
-        self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
-        io.save(self.out_file, ChainSelect(self.chain))
-
 
 class PdbFile(ProteinFile):
     '''
@@ -233,7 +208,7 @@ class PdbFile(ProteinFile):
 
 
 class MMCIFfile(ProteinFile):
-    def download(self):
+    def download_only(self):
         self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
         try:
             makedirs(self.dir)
@@ -243,6 +218,9 @@ class MMCIFfile(ProteinFile):
         html = response.read().decode("UTF-8")
         with open(self.cif_file, 'w') as myfile:
             myfile.write(html)
+
+    def download(self):
+        self.download_only()
         if self.chain is not None:
             self.filter_by_chain()
         else:
@@ -267,6 +245,26 @@ class MMCIFfile(ProteinFile):
         self.out_file = self.out_file.replace(".cif", "_" + self.atom + ".cif")
         io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
         del io
+
+    def get_first_residue_id(self):
+        parser = MMCIFParser()
+        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    return residue.get_id()[1]
+        return 0
+
+    def get_residue_list(self):
+        parser = MMCIFParser()
+        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        residues = []
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if residue.__dict__['resname']!='HOH':
+                        residues.append((residue.get_id()[1], residue.__dict__['resname']))
+        return residues
 
 
 class getIdenticalChains:

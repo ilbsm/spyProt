@@ -300,10 +300,10 @@ if __name__ == "__main__":
     if not os.path.exists(".temps"):
         os.makedirs(".temps")
     
-    if not os.path.exists("results"):
+    if not os.path.exists("../results"):
         os.makedirs("results")
     
-    if not os.path.exists("results/fasta"):
+    if not os.path.exists("../results/fasta"):
         os.makedirs("results/fasta")
 
     # Main loop

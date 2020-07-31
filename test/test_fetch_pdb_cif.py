@@ -1,4 +1,4 @@
-from fetchRcsbChainInfo import PdbFile, MMCIFfile
+from spyprot.fetchRcsbChainInfo import PdbFile, MMCIFfile
 
 p = PdbFile("/tmp", "1k36", "A").download()
 p = PdbFile("/tmp","1k36", "A", 'CA').download()
