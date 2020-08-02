@@ -258,12 +258,12 @@ class MMCIFfile(ProteinFile):
     def get_residue_list(self):
         parser = MMCIFParser()
         structure = parser.get_structure(self.pdbcode, self.cif_file)
-        residues = []
+        residues = {}
         for ch in structure.get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
-                    if residue.__dict__['resname']!='HOH':
-                        residues.append((residue.get_id()[1], residue.__dict__['resname']))
+                    if residue.__dict__['resname'] != 'HOH':
+                        residues[(residue.get_id()[1], residue.get_id()[2])] = residue.__dict__['resname']
         return residues
 
 
