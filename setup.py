@@ -15,7 +15,7 @@ setup(
     url="https://github.com/Zedelghem/spyProt",
     packages=find_packages(),
     install_requires=[
-        'Bio>=0.1.0', 'tqdm>=4.31.1', 'lxml>=4.5.0', 'requests>=2.0.0', 'biopython>1.60', 'psutil>5.6.0', 'subprocess32>=3.5.0', 'wget>=3.0'
+        'tqdm>=4.31.1', 'lxml>=4.5.0', 'requests>=2.0.0', 'biopython>1.60', 'psutil>5.6.0', 'subprocess32>=3.5.0', 'wget>=3.0'
     ],
     python_requires='>=3.5.0',
     classifiers=[

@@ -1,7 +1,6 @@
 tqdm==4.31.1
 lxml
 requests>=2.20.0
-Bio
 psutil==5.6.3
 subprocess32==3.5.4
 wget==3.2
