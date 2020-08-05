@@ -100,13 +100,13 @@ class PdbFile(ProteinFile):
        Supports also PDB Bundles when there are many subchains for a given protein
 
        example:
-       PdbFile("1j85", "A", "/tmp").download()
+       PdbFile("/tmp", "1j85", "A").download()
 
        Parameters
        ==========
+       path: string - where to store PDB file
        code: string - PDB ID
        chain: string
-       path: string - where to store PDB file
 
     '''
 
