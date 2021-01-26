@@ -4,8 +4,11 @@ import csv
 import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
+from datetime import datetime
 from os import makedirs, path
 from xml.dom import minidom
+
+import requests
 from lxml import etree
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
 from Bio.PDB.MMCIFParser import MMCIFParser
@@ -306,6 +309,10 @@ class getSimilarChains:
        chain: string
        identity: int - (percentage) of sequence identity
     '''
+
+    # New RCSB API:
+    # https://search.rcsb.org/query-editor.html?json=%7B%22query%22:%7B%22type%22:%22terminal%22,%22service%22:%22sequence%22,%22parameters%22:%7B%22evalue_cutoff%22:1,%22identity_cutoff%22:0.9,%22target%22:%22pdb_protein_sequence%22,%22value%22:%22MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAGQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHQYREQIKRVKDSDDVPMVLVGNKCDLPARTVETRQAQDLARSYGIPYIETSAKTRQGVEDAFYTLVREIRQHKLRKLNPPDESGPGCMNCKCVIS%22%7D%7D,%22request_options%22:%7B%22scoring_strategy%22:%22sequence%22%7D,%22return_type%22:%22polymer_entity%22%7D
+
     def __init__(self, pdb, chain='A', identity=40):
         chain = chain
         url = "http://www.rcsb.org/pdb/rest/sequenceCluster?cluster="+str(identity)+"&structureId="+pdb+"."+chain
@@ -398,4 +405,28 @@ def fetchReleasedPdbs(from_date, to_date=''):
         return False
 
 
+def fetch_released_epdb(from_date, to_date='', with_uniq_chains=False):
+    if type(from_date) is datetime.date:
+        from_date = from_date.strftime("%Y-%m-%d")
+    if to_date == '':
+        to_date = from_date
+    if type(to_date) is datetime.date:
+        to_date = to_date.strftime("%Y-%m-%d")
 
+    url = 'https://www.ebi.ac.uk/pdbe/search/pdb/select?debug=query&q=release_date:[' + from_date + 'T00:00:00Z%20TO%20' + to_date + 'T23:59:59Z] AND assembly_composition:*protein*&start=0&rows=200000&fl=pdb_id,entity_id,chain_id,assembly_composition'
+    response = requests.get(url)
+    json_out = response.json()
+    pdb_ids = []
+    #print(json_out['response']['numFound'])
+    for i in range(len(json_out['response']['docs'])):
+        pid = json_out['response']['docs'][i]['pdb_id']
+        chain_id = json_out['response']['docs'][i]['chain_id']
+        #ent_id = json_out['response']['docs'][i]['entity_id']
+        #ass_comp = json_out['response']['docs'][i]['assembly_composition']
+        #print("%s %s" % (pid, chain_id[0]))
+        if with_uniq_chains:
+            pdb_ids.append((pid, chain_id[0]))
+        else:
+            if pid not in pdb_ids:
+                pdb_ids.append(pid)
+    return pdb_ids
