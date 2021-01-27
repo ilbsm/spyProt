@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="spyprot",
-    version='0.1.0',
+    version='0.1.1',
     author="INTERDISCIPLINARY LABORATORY of BIOLOGICAL SYSTEMS MODELLING, University of Warsaw, Warsaw, Poland",
     author_email="bmjastrzebski@gmail.com, p.rubach@cent.uw.edu.pl",
     description="This package provides a set of tools for accessing protein databases and manipulating PDB/CIF files.",

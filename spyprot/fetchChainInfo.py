@@ -307,30 +307,31 @@ class SequenceException(Exception):
     pass
 
 
-# class getIdenticalChains:
-#     '''
-#        Find identical chains to a given one
-#
-#        example:
-#        a = getIdenticalChains("2jlo",chain="A").get()
-#
-#        Parameters
-#        ==========
-#        pdbcode: string - PDB ID
-#        chain: string
-#     '''
-#
-#     def __init__(self, pdbcode, chain='A'):
-#         self.pdb = pdbcode.upper()
-#         self.chain = chain
-#         f = urllib.request.urlopen('http://www.rcsb.org/pdb/rest/describeMol?structureId='+self.pdb+'.'+self.chain)
-#         data = f.read()
-#         f.close()
-#         self.root = etree.fromstring(data)
-#
-#     def get(self):
-#         d = self.root.xpath("//molDescription/structureId[@id='"+self.pdb+"'][@chainId='"+self.chain+"']/polymer/chain/@id")
-#         return d
+class IdenticalChains(PDBeSolrSearch):
+    '''
+       Find identical chains to a given one
+
+       example:
+       a = IdenticalChains("2jlo",chain="A").get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+    '''
+    def __init__(self, pdbcode, chain):
+        super().__init__()
+
+        response = self.solr.search(**{
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
+                ('pdb_id', pdbcode)
+            ]),
+        })
+        self.results = []
+        for i in range(len(response.documents)):
+            chain_id = response.documents[i]['chain_id']
+            if chain in chain_id:
+                self.results = sorted(chain_id)
+                break
 
 
 class SimilarChains(PDBeSolrSearch):
@@ -338,7 +339,7 @@ class SimilarChains(PDBeSolrSearch):
        Find similar chains to a given one with sequence identity given as parameter
 
        example:
-       a = FetchSimilarChains("2jlo",chain="A",identity=90).get()
+       a = SimilarChains("2jlo",chain="A",identity=90).get()
 
        Parameters
        ==========
@@ -347,12 +348,6 @@ class SimilarChains(PDBeSolrSearch):
        seq: string - sequence to compare against - instead od pdbcode and chain
        identity: int - (percentage) of sequence identity
     '''
-
-    #https://www.rcsb.org/fasta/chain/4HHB.A/download
-
-    # New RCSB API:
-    # https://search.rcsb.org/query-editor.html?json=%7B%22query%22:%7B%22type%22:%22terminal%22,%22service%22:%22sequence%22,%22parameters%22:%7B%22evalue_cutoff%22:1,%22identity_cutoff%22:0.9,%22target%22:%22pdb_protein_sequence%22,%22value%22:%22MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAGQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHQYREQIKRVKDSDDVPMVLVGNKCDLPARTVETRQAQDLARSYGIPYIETSAKTRQGVEDAFYTLVREIRQHKLRKLNPPDESGPGCMNCKCVIS%22%7D%7D,%22request_options%22:%7B%22scoring_strategy%22:%22sequence%22%7D,%22return_type%22:%22polymer_entity%22%7D
-
     def __init__(self, pdb=None, chain='A', seq=None, identity=40):
         super().__init__()
         self.chain = chain
@@ -374,7 +369,7 @@ class SimilarChains(PDBeSolrSearch):
         r = urllib.request.urlopen(url)
         data = r.read()
         r.close()
-        if data.decode('utf-8')=='No fasta files were found.':
+        if data.decode('utf-8') == 'No fasta files were found.':
             raise SequenceException(data.decode('utf-8'))
         return data.splitlines()[1].decode('utf-8')
 
@@ -427,8 +422,10 @@ class SimilarChains(PDBeSolrSearch):
         for i in range(len(response.documents)):
             pid = response.documents[i]['pdb_id']
             chain_id = response.documents[i]['chain_id']
-            self.results.append((pid.upper(), chain_id[0]))
+            self.results.append((pid.upper(), sorted(chain_id)[0]))
 
+    def get(self):
+        return sorted(self.results)
 
 class ReleasedProteins(PDBeSolrSearch):
     '''
@@ -436,7 +433,7 @@ class ReleasedProteins(PDBeSolrSearch):
 
           Return empty list if None found
           example:
-          a = getUniqChains("2jlo").get()
+          a = ReleasedProteins("2020-10-10", "2020-11-10").get()
 
           Parameters
           ==========
@@ -467,7 +464,7 @@ class ReleasedProteins(PDBeSolrSearch):
             # ass_comp = json_out['response']['docs'][i]['assembly_composition']
             # print("%s %s" % (pid, chain_id[0]))
             if uniq_chains:
-                self.results.append((pid, chain_id[0]))
+                self.results.append((pid, sorted(chain_id)[0]))
             else:
                 if pid not in self.results:
                     self.results.append(pid)
@@ -478,7 +475,7 @@ class UniqueChains(PDBeSolrSearch):
        Find a list of unique chains for a given PDB id
 
        example:
-       a = getUniqChains("2jlo").get()
+       a = UniqChains("2jlo").get()
 
        Parameters
        ==========
@@ -495,4 +492,4 @@ class UniqueChains(PDBeSolrSearch):
         self.results = []
         for i in range(len(response.documents)):
             chain_id = response.documents[i]['chain_id']
-            self.results.append(chain_id[0])
+            self.results.append(sorted(chain_id)[0])
