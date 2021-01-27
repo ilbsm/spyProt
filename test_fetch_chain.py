@@ -17,6 +17,15 @@ def test_fetchChainInfo_UniqueChains_2():
     assert f.get() == []
 
 
+def test_fetchChainInfo_UniqueChains_3():
+    f = UniqueChains('6zj3', only_rna=True)
+    assert str(f.get()) == "['LA', 'LB', 'LG', 'LF', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO', 'S2', 'S3', 'S4', 'LC', 'LD', 'LE', 'LH', 'LI', 'S5', 'S1']"
+    f = UniqueChains('6zj3', only_prot=True)
+    assert len(f.get())==78
+    f = UniqueChains('6zj3', only_prot=False, only_rna=False)
+    assert len(f.get()) == 98
+
+
 def test_fetchChainInfo_SimilarChains():
     sim = SimilarChains(pdb='1j85', chain='A')
     assert str(sim.get()) == "[('1J85', 'A'), ('3E5Y', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('4KGN', 'A'), ('4PZK', 'A'), ('5CO4', 'A'), ('6AHW', 'A'), ('6QH8', 'A'), ('6QKV', 'A')]"

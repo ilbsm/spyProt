@@ -483,14 +483,23 @@ class UniqueChains(PDBeSolrSearch):
        ==========
        pdbcode: string - PDB ID
     '''
-    def __init__(self, pdbcode):
+    def __init__(self, pdbcode, only_prot=True, only_rna=False):
         super().__init__()
 
+        if only_rna:
+            only_prot = False
+        if only_prot or only_rna:
+            q = super().join_with_AND([
+                ('pdb_id', pdbcode),
+                ('molecule_type', 'Protein' if only_prot else 'RNA')
+            ])
+        else:
+            q = super().join_with_AND([
+                ('pdb_id', pdbcode),
+            ])
+
         response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
-                ('pdb_id', pdbcode)
-            ]),
-        })
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition,molecule_type", "q":  q})
         self.results = []
         for i in range(len(response.documents)):
             chain_id = response.documents[i]['chain_id']
