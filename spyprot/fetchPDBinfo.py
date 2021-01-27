@@ -4,6 +4,7 @@ import urllib.parse
 import urllib.request
 from itertools import count, groupby
 from os import path
+import tempfile
 
 from lxml import etree
 
@@ -14,7 +15,7 @@ def convertToRanges(L):
 
 
 class XmlPdbParser:
-    def __init__(self, work_dir, pdbcode, chain, localfile=False, atom="CA"):
+    def __init__(self, pdbcode, chain, work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
         self.pdb = pdbcode
         self.chain = chain
         self.atom = atom
@@ -36,8 +37,8 @@ class XmlPdbParser:
 
 
 class getCoordinates(XmlPdbParser):
-    def __init__(self, work_dir, pdbcode, localfile=False, atom="CA"):
-        super().__init__(work_dir, pdbcode, None, localfile, atom=atom)
+    def __init__(self, pdbcode, work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
+        super().__init__(pdbcode, None, work_dir, localfile, atom=atom)
         l = self.root.xpath(
             "//PDBx:atom_siteCategory/PDBx:atom_site[PDBx:auth_atom_id=\"" + atom + "\"][PDBx:pdbx_PDB_model_num='1'][PDBx:group_PDB='ATOM']/PDBx:auth_asym_id",
             namespaces=self.NS)
@@ -140,8 +141,8 @@ class getCoordinates(XmlPdbParser):
 
 
 class fetchPDBinfo(XmlPdbParser):
-    def __init__(self, work_dir, pdbcode, chain='A', localfile=False, atom="CA"):
-        super().__init__(work_dir, pdbcode, chain, localfile, atom=atom)
+    def __init__(self, pdbcode, chain='A', work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
+        super().__init__(pdbcode, chain, work_dir, localfile, atom=atom)
         self.codification = {"ALA": 'A',
                              "CYS": 'C',
                              "ASP": 'D',
@@ -372,7 +373,7 @@ class fetchPDBinfo(XmlPdbParser):
 
 if __name__ == "__main__":
 #    pdb=argv[1].lower()
-    r = fetchPDBinfo('/tmp','6CZR', '1a', localfile=False, atom="C3'")
+    r = fetchPDBinfo('6CZR', '1a', '/tmp', localfile=False, atom="C3'")
     #r = fetchPDBinfo('/tmp','1j85', 'A', localfile=False, atom="CA")
     print(r.getSeqLength())
     print(r.getCAlen())

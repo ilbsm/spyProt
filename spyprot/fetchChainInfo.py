@@ -351,7 +351,7 @@ class SimilarChains(PDBeSolrSearch):
     def __init__(self, pdb=None, chain='A', seq=None, identity=40):
         super().__init__()
         self.chain = chain
-        self.pdb = pdb
+        self.pdb = pdb.lower()
         self.identity = float(identity / 100)
         self.identifiers = []
         self.results = []

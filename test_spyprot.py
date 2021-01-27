@@ -25,7 +25,7 @@ def test_fetch_pdb_info():
     import tempfile
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', BiopythonExperimentalWarning)
-        a = fetchPDBinfo(tempfile.gettempdir(), "1uak", "A")
+        a = fetchPDBinfo("1uak", "A")
         assert str(a.getCalfaBreaks()) == '[162, 172]'
 
 
