@@ -58,6 +58,7 @@ class Command(object):
             except TimeoutExpired:
                 print("timeout occured for process pid: " + str(self.process.pid))
                 self.process.terminate()
+                self.rcode = -400
             except OSError as e:
                 print("OS Error: " + str(e))
                 self.rcode = -100

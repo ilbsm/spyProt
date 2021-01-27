@@ -1,5 +1,6 @@
 import warnings
 
+from spyprot import getCath
 from spyprot.fetchPDBinfo import fetchPDBinfo
 from spyprot.fetchAnnotations import PfamAnnotation, ECAnnotation
 
@@ -26,3 +27,8 @@ def test_fetch_pdb_info():
         warnings.simplefilter('ignore', BiopythonExperimentalWarning)
         a = fetchPDBinfo(tempfile.gettempdir(), "1uak", "A")
         assert str(a.getCalfaBreaks()) == '[162, 172]'
+
+
+def test_cddf_parser():
+    d = getCath("1j85", "A")
+    print(d)
