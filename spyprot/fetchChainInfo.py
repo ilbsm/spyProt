@@ -4,7 +4,7 @@ import csv
 import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
-from datetime import datetime
+import datetime
 from os import makedirs, path
 from xml.dom import minidom
 
