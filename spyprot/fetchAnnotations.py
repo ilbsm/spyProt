@@ -10,7 +10,7 @@ from os import path
 from lxml import etree
 
 
-REFRESH_FILE_INTERVAL = 15*24*3600 # Refresh every week
+REFRESH_FILE_INTERVAL = 7*24*3600 # Refresh every week
 
 PDB_CHAIN_ENZYME = [ "http://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
 ENZYME_DAT = [ "http://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
@@ -70,7 +70,7 @@ class AnnotationBase:
         return enz_file
 
 
-class getECAnnotation(AnnotationBase):
+class ECAnnotation(AnnotationBase):
     '''Retrieve EC annotations for a given PDBID and Chain
 
        Annotations are parsed from files downloaded from expasy and stored locally in:
@@ -137,7 +137,7 @@ class getECAnnotation(AnnotationBase):
         return o
 
 
-class getPfamAnnotation(AnnotationBase):
+class PfamAnnotation(AnnotationBase):
     '''Retrieve PFAM annotations for a given PDBID and Chain
 
        Annotations are parsed from files downloaded from pfam and stored locally in:
@@ -175,40 +175,31 @@ class getPfamAnnotation(AnnotationBase):
         return "","",""
 
 
-class getAnnotations:
-    '''Retrieve PFAM annotations for a given PDBID and Chain directly from RCSB
-
-       Parameters
-       ==========
-       pdbcode: string
-       chain: string
-
-       Return
-       ======
-       results: list of tuples containing attributes: pdbid, chain, ..., ..., pfam accession code, pfam_short, pfam_desc, ...
-       '''
-    def __init__(self, pdb, chain='A'):
-        self.pdb = pdb
-        self.chain = chain
-        url = "http://www.pdb.org/pdb/rest/hmmer?structureId="+pdb.upper()
-        r = urllib.request.urlopen(url)
-        data = r.read()
-        self.hmmer = etree.fromstring(data)
-
-    def get(self):
-        out=[]
-        for r in self.hmmer:
-            d = list(r.values())
-            d[0] = d[0].lower()
-            out.append(d)
-        #out[0] = out[0].lower()
-        return out
-
-
-if __name__ == '__main__':
-    a = getPfamAnnotation("1j85", "A")
-    print(str(a.get()))
-    a = getAnnotations("1j85", "A")
-    print(str(a.get()))
-    a = getECAnnotation("1cak", "A")
-    print(str(a.get()))
+# class getAnnotations:
+#     '''Retrieve PFAM annotations for a given PDBID and Chain directly from RCSB
+#
+#        Parameters
+#        ==========
+#        pdbcode: string
+#        chain: string
+#
+#        Return
+#        ======
+#        results: list of tuples containing attributes: pdbid, chain, ..., ..., pfam accession code, pfam_short, pfam_desc, ...
+#        '''
+#     def __init__(self, pdb, chain='A'):
+#         self.pdb = pdb
+#         self.chain = chain
+#         url = "http://www.pdb.org/pdb/rest/hmmer?structureId="+pdb.upper()
+#         r = urllib.request.urlopen(url)
+#         data = r.read()
+#         self.hmmer = etree.fromstring(data)
+#
+#     def get(self):
+#         out=[]
+#         for r in self.hmmer:
+#             d = list(r.values())
+#             d[0] = d[0].lower()
+#             out.append(d)
+#         #out[0] = out[0].lower()
+#         return out

@@ -12,6 +12,13 @@ import requests
 from lxml import etree
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
 from Bio.PDB.MMCIFParser import MMCIFParser
+from mysolr import Solr
+import logging, sys
+
+from requests import HTTPError
+
+PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
+UNLIMITED_ROWS = 10000000
 
 
 class ProteinFile:
@@ -270,66 +277,203 @@ class MMCIFfile(ProteinFile):
         return residues
 
 
-class getIdenticalChains:
-    '''
-       Find identical chains to a given one
+class PDBeSolrSearch:
+    def __init__(self):
+        self.solr = Solr(PDBE_SOLR_URL, version=4)
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout,
+                            format='LOG|%(asctime)s|%(levelname)s  %(message)s', datefmt='%d-%b-%Y %H:%M:%S')
+        logging.getLogger("requests").setLevel(logging.WARNING)
 
-       example:
-       a = getIdenticalChains("2jlo",chain="A").get()
+    @staticmethod
+    def join_with_AND(selectors):
+        return " AND ".join(
+            ["%s:%s" % (k, v) for k, v in selectors]
+        )
 
-       Parameters
-       ==========
-       pdbcode: string - PDB ID
-       chain: string
-    '''
-
-    def __init__(self, pdbcode, chain='A'):
-        self.pdb = pdbcode.upper()
-        self.chain = chain
-        f = urllib.request.urlopen('http://www.rcsb.org/pdb/rest/describeMol?structureId='+self.pdb+'.'+self.chain)
-        data = f.read()
-        f.close()
-        self.root = etree.fromstring(data)
+    @staticmethod
+    def join_with_OR(selectors):
+        return " OR ".join(
+            ["%s:%s" % (k, v) for k, v in selectors]
+        )
 
     def get(self):
-        d = self.root.xpath("//molDescription/structureId[@id='"+self.pdb+"'][@chainId='"+self.chain+"']/polymer/chain/@id")
-        return d
+        return self.results
 
 
-class getSimilarChains:
+class SearchException(Exception):
+    pass
+
+class SequenceException(Exception):
+    pass
+
+
+# class getIdenticalChains:
+#     '''
+#        Find identical chains to a given one
+#
+#        example:
+#        a = getIdenticalChains("2jlo",chain="A").get()
+#
+#        Parameters
+#        ==========
+#        pdbcode: string - PDB ID
+#        chain: string
+#     '''
+#
+#     def __init__(self, pdbcode, chain='A'):
+#         self.pdb = pdbcode.upper()
+#         self.chain = chain
+#         f = urllib.request.urlopen('http://www.rcsb.org/pdb/rest/describeMol?structureId='+self.pdb+'.'+self.chain)
+#         data = f.read()
+#         f.close()
+#         self.root = etree.fromstring(data)
+#
+#     def get(self):
+#         d = self.root.xpath("//molDescription/structureId[@id='"+self.pdb+"'][@chainId='"+self.chain+"']/polymer/chain/@id")
+#         return d
+
+
+class SimilarChains(PDBeSolrSearch):
     '''
        Find similar chains to a given one with sequence identity given as parameter
 
        example:
-       a = getSimilarChains("2jlo",chain="A",identity=90).get()
+       a = FetchSimilarChains("2jlo",chain="A",identity=90).get()
 
        Parameters
        ==========
        pdbcode: string - PDB ID
        chain: string
+       seq: string - sequence to compare against - instead od pdbcode and chain
        identity: int - (percentage) of sequence identity
     '''
+
+    #https://www.rcsb.org/fasta/chain/4HHB.A/download
 
     # New RCSB API:
     # https://search.rcsb.org/query-editor.html?json=%7B%22query%22:%7B%22type%22:%22terminal%22,%22service%22:%22sequence%22,%22parameters%22:%7B%22evalue_cutoff%22:1,%22identity_cutoff%22:0.9,%22target%22:%22pdb_protein_sequence%22,%22value%22:%22MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAGQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHQYREQIKRVKDSDDVPMVLVGNKCDLPARTVETRQAQDLARSYGIPYIETSAKTRQGVEDAFYTLVREIRQHKLRKLNPPDESGPGCMNCKCVIS%22%7D%7D,%22request_options%22:%7B%22scoring_strategy%22:%22sequence%22%7D,%22return_type%22:%22polymer_entity%22%7D
 
-    def __init__(self, pdb, chain='A', identity=40):
-        chain = chain
-        url = "http://www.rcsb.org/pdb/rest/sequenceCluster?cluster="+str(identity)+"&structureId="+pdb+"."+chain
+    def __init__(self, pdb=None, chain='A', seq=None, identity=40):
+        super().__init__()
+        self.chain = chain
+        self.pdb = pdb
+        self.identity = float(identity / 100)
+        self.identifiers = []
+        self.results = []
+
+        try:
+            self.seq = seq if seq else self.get_seq()
+            self.get_similar()
+            self.translate_enity_ids_to_chains()
+        except (urllib.error.URLError or HTTPError or SequenceException) as he:
+            raise SearchException('Problem looking for similar chains to: ' + pdb + ' ' + chain + ': ' + str(he))
+
+
+    def get_seq(self):
+        url = "https://www.rcsb.org/fasta/chain/{0}.{1}/download".format(self.pdb.upper(), self.chain)
         r = urllib.request.urlopen(url)
         data = r.read()
         r.close()
-        try:
-            xmldoc = minidom.parseString(data)
-            self.items = [elt.getAttribute('name') for elt in xmldoc.getElementsByTagName('pdbChain')]
-        except:
-            self.items = [pdb.upper()+"."+chain]#.upper()]
+        if data.decode('utf-8')=='No fasta files were found.':
+            raise SequenceException(data.decode('utf-8'))
+        return data.splitlines()[1].decode('utf-8')
 
-    def get(self):
-        return self.items
+    def get_similar(self):
+        query = """
+{
+  "query": {
+    "type": "terminal",
+    "service": "sequence",
+    "parameters": {
+      "evalue_cutoff": 1,
+      "identity_cutoff": %s,
+      "target": "pdb_protein_sequence",
+      "value": "%s"
+    }
+  },
+  "return_type": "polymer_entity",
+  "request_options": {
+    "pager": {
+      "start": 0,
+      "rows": 100
+    },
+    "scoring_strategy": "sequence",
+    "sort": [
+      {
+        "sort_by": "score",
+        "direction": "desc"
+      }
+    ]
+  }
+}               
+        """ % (self.identity, self.seq)
+        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(query)
+        response = requests.get(url)
+        result = response.json()
+        for el in result['result_set']:
+            self.identifiers.append(el['identifier'])
+
+    def translate_enity_ids_to_chains(self):
+        if not self.identifiers:
+            return
+        ident_list = self.identifiers[0]
+        for entr_ent in self.identifiers[1:]:
+            ident_list += ' OR ' + entr_ent.lower()
+        response = self.solr.search(**{
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_OR([
+                ('entry_entity', '(' + ident_list + ')')
+            ]),
+        })
+        for i in range(len(response.documents)):
+            pid = response.documents[i]['pdb_id']
+            chain_id = response.documents[i]['chain_id']
+            self.results.append((pid.upper(), chain_id[0]))
 
 
-class getUniqChains:
+class ReleasedProteins(PDBeSolrSearch):
+    '''
+          Download list of pdb ids released in range from_date - to_date (or in day from_date).
+
+          Return empty list if None found
+          example:
+          a = getUniqChains("2jlo").get()
+
+          Parameters
+          ==========
+          from_date: datetime or string in format YYYY-MM-DD
+          to_date: datetime or string in format YYYY-MM-DD
+          uniq_chains: if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
+       '''
+    def __init__(self, from_date, to_date='', uniq_chains=True):
+        super().__init__()
+        if type(from_date) is datetime.date:
+            from_date = from_date.strftime("%Y-%m-%d")
+        if to_date == '':
+            to_date = from_date
+        if type(to_date) is datetime.date:
+            to_date = to_date.strftime("%Y-%m-%d")
+
+        response = self.solr.search(**{
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
+                ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
+                ('assembly_composition', '*protein*')
+            ]),
+        })
+        self.results = []
+        for i in range(len(response.documents)):
+            pid = response.documents[i]['pdb_id']
+            chain_id = response.documents[i]['chain_id']
+            # ent_id = json_out['response']['docs'][i]['entity_id']
+            # ass_comp = json_out['response']['docs'][i]['assembly_composition']
+            # print("%s %s" % (pid, chain_id[0]))
+            if uniq_chains:
+                self.results.append((pid, chain_id[0]))
+            else:
+                if pid not in self.results:
+                    self.results.append(pid)
+
+
+class UniqueChains(PDBeSolrSearch):
     '''
        Find a list of unique chains for a given PDB id
 
@@ -341,92 +485,14 @@ class getUniqChains:
        pdbcode: string - PDB ID
     '''
     def __init__(self, pdbcode):
-        self.pdb = pdbcode.upper()
-        f = urllib.request.urlopen('http://www.rcsb.org/pdb/rest/describeMol?structureId='+self.pdb)
-        data = f.read()
-        f.close()
-        self.root = etree.fromstring(data)
+        super().__init__()
 
-    def get(self):
-        o = []
-        d = self.root.xpath("//molDescription/structureId[@id='"+self.pdb+"']/polymer/@entityNr")
-        for e in d:
-            d2 = self.root.xpath("//molDescription/structureId[@id='"+self.pdb+"']/polymer[@entityNr='"+e+"']/chain/@id")
-            o.append(d2[0])
-        return o
-
-
-def fetchReleasedPdbs(from_date, to_date=''):
-    '''
-        Download list of pdb ids released in range from_date - to_date (or in day from_date). Return False if empty list
-    '''
-    if to_date == '':
-        to_date = from_date
-    '''
-    date in format 2009-07-01
-    '''
-    url = 'http://www.rcsb.org/pdb/rest/search'
-    queryText = """
-<orgPdbCompositeQuery version="1.0">
-<queryRefinement>
-<queryRefinementLevel>0</queryRefinementLevel>
-<orgPdbQuery>
-
-<queryType>org.pdb.query.simple.ReleaseDateQuery</queryType>
-<pdbx_audit_revision_history.revision_date.comparator>between</pdbx_audit_revision_history.revision_date.comparator>
-<pdbx_audit_revision_history.revision_date.min>%s</pdbx_audit_revision_history.revision_date.min>
-<pdbx_audit_revision_history.revision_date.max>%s</pdbx_audit_revision_history.revision_date.max>
-<pdbx_audit_revision_history.ordinal.comparator>=</pdbx_audit_revision_history.ordinal.comparator>
-<pdbx_audit_revision_history.ordinal.value>1</pdbx_audit_revision_history.ordinal.value>
-</orgPdbQuery>
-</queryRefinement>
-<queryRefinement>
-<queryRefinementLevel>1</queryRefinementLevel>
-<conjunctionType>and</conjunctionType>
-<orgPdbQuery>
-<queryType>org.pdb.query.simple.ChainTypeQuery</queryType>
-<description>Chain Type: there is a Protein chain</description>
-<containsProtein>Y</containsProtein>
-<containsDna>?</containsDna>
-<containsRna>?</containsRna>
-<containsHybrid>?</containsHybrid>
-</orgPdbQuery>
-</queryRefinement>
-</orgPdbCompositeQuery>
-    """ % (from_date, to_date)
-
-    req = urllib.request.Request(url, data=queryText.encode("utf-8"), method='POST')
-    f = urllib.request.urlopen(req)
-    result = [i.strip().decode("utf-8") for i in f.readlines()]
-    f.close()
-    if result:
-        return result
-    else:
-        return False
-
-
-def fetch_released_epdb(from_date, to_date='', with_uniq_chains=False):
-    if type(from_date) is datetime.date:
-        from_date = from_date.strftime("%Y-%m-%d")
-    if to_date == '':
-        to_date = from_date
-    if type(to_date) is datetime.date:
-        to_date = to_date.strftime("%Y-%m-%d")
-
-    url = 'https://www.ebi.ac.uk/pdbe/search/pdb/select?debug=query&q=release_date:[' + from_date + 'T00:00:00Z%20TO%20' + to_date + 'T23:59:59Z] AND assembly_composition:*protein*&start=0&rows=200000&fl=pdb_id,entity_id,chain_id,assembly_composition'
-    response = requests.get(url)
-    json_out = response.json()
-    pdb_ids = []
-    #print(json_out['response']['numFound'])
-    for i in range(len(json_out['response']['docs'])):
-        pid = json_out['response']['docs'][i]['pdb_id']
-        chain_id = json_out['response']['docs'][i]['chain_id']
-        #ent_id = json_out['response']['docs'][i]['entity_id']
-        #ass_comp = json_out['response']['docs'][i]['assembly_composition']
-        #print("%s %s" % (pid, chain_id[0]))
-        if with_uniq_chains:
-            pdb_ids.append((pid, chain_id[0]))
-        else:
-            if pid not in pdb_ids:
-                pdb_ids.append(pid)
-    return pdb_ids
+        response = self.solr.search(**{
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
+                ('pdb_id', pdbcode)
+            ]),
+        })
+        self.results = []
+        for i in range(len(response.documents)):
+            chain_id = response.documents[i]['chain_id']
+            self.results.append(chain_id[0])

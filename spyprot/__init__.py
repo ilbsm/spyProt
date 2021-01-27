@@ -3,7 +3,7 @@ from .cddf_parser import *
 from .common import *
 from .EditPdbXyz import *
 from .fetchPDBinfo import *
-from .fetchRcsbChainInfo import *
-from .getAnnotations import *
+from .fetchChainInfo import *
+from .fetchAnnotations import *
 from .idMapping import *
 from .spyProt import *
