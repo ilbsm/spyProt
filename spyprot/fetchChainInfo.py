@@ -363,15 +363,16 @@ class SimilarChains(PDBeSolrSearch):
         except (urllib.error.URLError or HTTPError or SequenceException) as he:
             raise SearchException('Problem looking for similar chains to: ' + pdb + ' ' + chain + ': ' + str(he))
 
-
     def get_seq(self):
-        url = "https://www.rcsb.org/fasta/chain/{0}.{1}/download".format(self.pdb.upper(), self.chain)
-        r = urllib.request.urlopen(url)
-        data = r.read()
-        r.close()
-        if data.decode('utf-8') == 'No fasta files were found.':
-            raise SequenceException(data.decode('utf-8'))
-        return data.splitlines()[1].decode('utf-8')
+        response = self.solr.search(**{
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,molecule_sequence", "q": super().join_with_AND([
+                ('pdb_id', self.pdb)
+            ]),
+        })
+        for i in range(len(response.documents)):
+            chain_id = response.documents[i]['chain_id']
+            if self.chain in chain_id:
+                return response.documents[i]['molecule_sequence']
 
     def get_similar(self):
         query = """
@@ -405,8 +406,9 @@ class SimilarChains(PDBeSolrSearch):
         url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(query)
         response = requests.get(url)
         result = response.json()
-        for el in result['result_set']:
-            self.identifiers.append(el['identifier'])
+        if result['result_set']:
+            for el in result['result_set']:
+                self.identifiers.append(el['identifier'])
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:

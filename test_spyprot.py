@@ -31,4 +31,4 @@ def test_fetch_pdb_info():
 
 def test_cddf_parser():
     d = getCath("1j85", "A")
-    print(d)
+    assert str(d)=="[{'pdbcode': '1j85', 'chain': 'A', 'DOMAIN': '1j85A00', 'CATHCODE': '3.40.1280.10', 'CLASS': 'Alpha Beta', 'ARCH': '3-Layer(aba) Sandwich', 'TOPOL': 'Alpha/beta knot', 'HOMOL': 'Alpha/beta knot'}]"
