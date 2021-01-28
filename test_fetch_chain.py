@@ -29,6 +29,8 @@ def test_fetchChainInfo_UniqueChains_3():
 def test_fetchChainInfo_SimilarChains():
     sim = SimilarChains(pdb='1j85', chain='A')
     assert str(sim.get()) == "[('1J85', 'A'), ('3E5Y', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('4KGN', 'A'), ('4PZK', 'A'), ('5CO4', 'A'), ('6AHW', 'A'), ('6QH8', 'A'), ('6QKV', 'A')]"
+    sim = SimilarChains('6lt7', 'A', identity=30)
+    assert len(sim.get()) == 3
 
 
 def test_fetchChainInfo_ReleasedProteins():
@@ -47,3 +49,4 @@ def test_fetchChainInfo_ReleasedProteins_2():
     assert str(res) == "[('6wvj', 'R'), ('6vem', 'A'), ('6wbr', 'B'), ('6hpj', 'A'), ('6wc0', 'B')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
     assert len(res) == 495
+

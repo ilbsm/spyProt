@@ -408,7 +408,7 @@ class SimilarChains(PDBeSolrSearch):
   }
 }               
         """ % (self.identity, self.seq)
-        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(query)
+        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
         response = requests.get(url)
         result = response.json()
         if result['result_set']:
