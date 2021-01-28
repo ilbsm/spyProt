@@ -423,9 +423,7 @@ class SimilarChains(PDBeSolrSearch):
             if 'result_set' in result:
                 for el in result['result_set']:
                     self.identifiers.append(el['identifier'])
-            else:
-                raise SearchException('SimilarChains: No result_set in reponse from RCSB search for: %s, %s, URL:\n %s' % (self.pdb, self.chain, urllib.parse.unquote(url)))
-        except (HTTPError or json.decoder.JSONDecodeError) as er:
+        except Exception as er:
             raise SearchException('SimilarChains: Error in response from RCSB search for URL:\n' + url + '\n' + str(er))
 
     def translate_enity_ids_to_chains(self):
