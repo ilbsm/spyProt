@@ -60,5 +60,3 @@ def test_fetchChainInfo_ReleasedProteins_2():
     assert str(res) == "[('6wvj', 'R'), ('6vem', 'A'), ('6wbr', 'B'), ('6hpj', 'A'), ('6wc0', 'B')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
     assert len(res) == 495
-
-

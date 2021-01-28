@@ -18,6 +18,7 @@ from requests import HTTPError
 
 PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
 UNLIMITED_ROWS = 10000000
+DEBUG = False
 
 
 class ProteinFile:
@@ -283,6 +284,14 @@ class MMCIFfile(ProteinFile):
         return residues
 
 
+class SearchException(Exception):
+    pass
+
+
+class SequenceException(Exception):
+    pass
+
+
 class PDBeSolrSearch:
     def __init__(self):
         self.solr = Solr(PDBE_SOLR_URL, version=4)
@@ -302,15 +311,19 @@ class PDBeSolrSearch:
             ["%s:%s" % (k, v) for k, v in selectors]
         )
 
+    def exec_query(self, field_list, query_details):
+        try:
+            query = { "rows": UNLIMITED_ROWS, "fl": field_list, "q": self.join_with_AND(query_details)}
+            response = self.solr.search(**query)
+            documents = response.documents
+            if DEBUG:
+                logging.getLogger().debug("Found %d matching entities in %d entries." % (len(documents), len({rd["pdb_id"] for rd in documents})))
+            return documents
+        except Exception as e:
+            raise SearchException('%s: error getting query response from: %s for: %s\n %s' % (self.__class__.__name__ , PDBE_SOLR_URL, str(query), str(e)))
+
     def get(self):
         return self.results
-
-
-class SearchException(Exception):
-    pass
-
-class SequenceException(Exception):
-    pass
 
 
 class IdenticalChains(PDBeSolrSearch):
@@ -327,14 +340,11 @@ class IdenticalChains(PDBeSolrSearch):
     def __init__(self, pdbcode, chain):
         super().__init__()
 
-        response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
-                ('pdb_id', pdbcode)
-            ]),
-        })
         self.results = []
-        for i in range(len(response.documents)):
-            chain_id = response.documents[i]['chain_id']
+        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('pdb_id', pdbcode)])
+
+        for i in range(len(documents)):
+            chain_id = documents[i]['chain_id']
             if chain in chain_id:
                 self.results = sorted(chain_id)
                 break
@@ -370,15 +380,11 @@ class SimilarChains(PDBeSolrSearch):
             raise SearchException('Problem looking for similar chains to: ' + pdb + ' ' + chain + ': ' + str(he))
 
     def get_seq(self):
-        response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,molecule_sequence", "q": super().join_with_AND([
-                ('pdb_id', self.pdb)
-            ]),
-        })
-        for i in range(len(response.documents)):
-            chain_id = response.documents[i]['chain_id']
+        documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_sequence", [('pdb_id', self.pdb)])
+        for i in range(len(documents)):
+            chain_id = documents[i]['chain_id']
             if self.chain in chain_id:
-                return response.documents[i]['molecule_sequence']
+                return documents[i]['molecule_sequence']
         raise SearchException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
 
     def get_similar(self):
@@ -422,25 +428,21 @@ class SimilarChains(PDBeSolrSearch):
         except (HTTPError or json.decoder.JSONDecodeError) as er:
             raise SearchException('SimilarChains: Error in response from RCSB search for URL:\n' + url + '\n' + str(er))
 
-
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
             return
         ident_list = self.identifiers[0]
         for entr_ent in self.identifiers[1:]:
             ident_list += ' OR ' + entr_ent.lower()
-        response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_OR([
-                ('entry_entity', '(' + ident_list + ')')
-            ]),
-        })
-        for i in range(len(response.documents)):
-            pid = response.documents[i]['pdb_id']
-            chain_id = response.documents[i]['chain_id']
+        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('entry_entity', '(' + ident_list + ')')])
+        for i in range(len(documents)):
+            pid = documents[i]['pdb_id']
+            chain_id = documents[i]['chain_id']
             self.results.append((pid.upper(), sorted(chain_id)[0]))
 
     def get(self):
         return sorted(self.results)
+
 
 class ReleasedPDBs(PDBeSolrSearch):
     '''
@@ -472,19 +474,15 @@ class ReleasedPDBs(PDBeSolrSearch):
         else:
             molecule_type = 'Protein'
 
-        response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,molecule_type", "q": super().join_with_AND([
-                ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
-                ('molecule_type', molecule_type)
-            ]),
-        })
         self.results = []
-        for i in range(len(response.documents)):
-            pid = response.documents[i]['pdb_id']
-            chain_id = response.documents[i]['chain_id']
-            # ent_id = json_out['response']['docs'][i]['entity_id']
-            # ass_comp = json_out['response']['docs'][i]['assembly_composition']
-            # print("%s %s" % (pid, chain_id[0]))
+        documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_type",
+                                    [
+                                        ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
+                                        ('molecule_type', molecule_type)
+                                    ])
+        for i in range(len(documents)):
+            pid = documents[i]['pdb_id']
+            chain_id = documents[i]['chain_id']
             if uniq_chains:
                 self.results.append((pid, sorted(chain_id)[0]))
             else:
@@ -512,13 +510,12 @@ class UniqueChains(PDBeSolrSearch):
             molecule_type = '(Protein OR RNA)'
         else:
             molecule_type = 'Protein'
-        response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition,molecule_type", "q": super().join_with_AND([
-                ('pdb_id', pdbcode),
-                ('molecule_type', molecule_type)
-            ])
-        })
         self.results = []
-        for i in range(len(response.documents)):
-            chain_id = response.documents[i]['chain_id']
+        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition,molecule_type",
+                                    [
+                                        ('pdb_id', pdbcode),
+                                        ('molecule_type', molecule_type)
+                                    ])
+        for i in range(len(documents)):
+            chain_id = documents[i]['chain_id']
             self.results.append(sorted(chain_id)[0])
