@@ -1,4 +1,6 @@
-from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs
+import pytest
+
+from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException
 from datetime import datetime
 
 
@@ -33,6 +35,15 @@ def test_fetchChainInfo_SimilarChains():
     assert len(sim.get()) == 3
 
 
+def test_fetchChainInfo_SimilarChains_fail():
+    with pytest.raises(SearchException):
+        sim = SimilarChains(seq='AFHAGAGOANBAG')
+        sim.get()
+    with pytest.raises(SearchException):
+        sim = SimilarChains(pdb='1j85aa', chain='A')
+        sim.get()
+
+
 def test_fetchChainInfo_ReleasedProteins():
     from_date = datetime(2020, 11, 10).date()
     to_date = datetime(2020, 11, 18).date()
@@ -49,4 +60,5 @@ def test_fetchChainInfo_ReleasedProteins_2():
     assert str(res) == "[('6wvj', 'R'), ('6vem', 'A'), ('6wbr', 'B'), ('6hpj', 'A'), ('6wc0', 'B')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
     assert len(res) == 495
+
 

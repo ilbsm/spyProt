@@ -5,6 +5,7 @@ import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
 import datetime
+import json
 from os import makedirs, path
 
 import requests
@@ -356,7 +357,7 @@ class SimilarChains(PDBeSolrSearch):
     def __init__(self, pdb=None, chain='A', seq=None, identity=40):
         super().__init__()
         self.chain = chain
-        self.pdb = pdb.lower()
+        self.pdb = pdb.lower() if pdb else None
         self.identity = float(identity / 100)
         self.identifiers = []
         self.results = []
@@ -378,6 +379,7 @@ class SimilarChains(PDBeSolrSearch):
             chain_id = response.documents[i]['chain_id']
             if self.chain in chain_id:
                 return response.documents[i]['molecule_sequence']
+        raise SearchException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
 
     def get_similar(self):
         query = """
@@ -409,11 +411,17 @@ class SimilarChains(PDBeSolrSearch):
 }               
         """ % (self.identity, self.seq)
         url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
-        response = requests.get(url)
-        result = response.json()
-        if result['result_set']:
-            for el in result['result_set']:
-                self.identifiers.append(el['identifier'])
+        try:
+            response = requests.get(url)
+            result = response.json()
+            if 'result_set' in result:
+                for el in result['result_set']:
+                    self.identifiers.append(el['identifier'])
+            else:
+                raise SearchException('SimilarChains: No result_set in reponse from RCSB search for: %s, %s, URL:\n %s' % (self.pdb, self.chain, urllib.parse.unquote(url)))
+        except (HTTPError or json.decoder.JSONDecodeError) as er:
+            raise SearchException('SimilarChains: Error in response from RCSB search for URL:\n' + url + '\n' + str(er))
+
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
