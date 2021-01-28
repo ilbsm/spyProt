@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from re import compile
 import gzip
 import bz2

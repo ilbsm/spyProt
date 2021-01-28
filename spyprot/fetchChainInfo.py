@@ -1,15 +1,13 @@
-#!/usr/bin/env python
-# Copyright Michal Jamroz 2014, jamroz@chem.uw.edu.pl
+import glob
+import os
 import csv
 import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
 import datetime
 from os import makedirs, path
-from xml.dom import minidom
 
 import requests
-from lxml import etree
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
 from Bio.PDB.MMCIFParser import MMCIFParser
 from mysolr import Solr
@@ -35,13 +33,13 @@ class ProteinFile:
 
 
 class ChainAndResidueSelect(Select):
-    def __init__(self, chain, model=1, residue_out="HOH"):
+    def __init__(self, chain, model=0, residue_out="HOH"):
         self.chain = chain
         self.model = model
         self.residue_out = residue_out
 
     def accept_model(self, model):
-        if model is None or (model is not None and model.serial_num == self.model):
+        if model is None or (model is not None and model.id == self.model):
             return True
         else:
             return False
@@ -146,6 +144,13 @@ class PdbFile(ProteinFile):
                 self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
             else:
                 shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
+                self.filter_by_chain()
+            fileList = glob.glob(os.path.join(self.dir, self.pdbcode + "*bundle*.pdb"))
+            for filePath in fileList:
+                try:
+                    os.remove(filePath)
+                except OSError:
+                    print("Error while deleting file")
         if self.atom:
             self.filter_by_atom()
         return self.out_file

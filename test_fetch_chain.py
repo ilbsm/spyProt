@@ -1,5 +1,5 @@
 from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 
 def test_fetchChainInfo_IdenticalChains():

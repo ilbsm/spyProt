@@ -7,7 +7,6 @@ import datetime
 import urllib.request, urllib.error, urllib.parse,gzip,re 
 import os
 from os import path
-from lxml import etree
 
 
 REFRESH_FILE_INTERVAL = 7*24*3600 # Refresh every week
