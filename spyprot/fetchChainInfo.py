@@ -429,7 +429,7 @@ class SimilarChains(PDBeSolrSearch):
     def get(self):
         return sorted(self.results)
 
-class ReleasedProteins(PDBeSolrSearch):
+class ReleasedPDBs(PDBeSolrSearch):
     '''
           Download list of pdb ids released in range from_date - to_date (or in day from_date).
 
@@ -443,7 +443,7 @@ class ReleasedProteins(PDBeSolrSearch):
           to_date: datetime or string in format YYYY-MM-DD
           uniq_chains: if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
        '''
-    def __init__(self, from_date, to_date='', uniq_chains=True):
+    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False):
         super().__init__()
         if type(from_date) is datetime.date:
             from_date = from_date.strftime("%Y-%m-%d")
@@ -452,10 +452,17 @@ class ReleasedProteins(PDBeSolrSearch):
         if type(to_date) is datetime.date:
             to_date = to_date.strftime("%Y-%m-%d")
 
+        if only_rna:
+            molecule_type = 'RNA'
+        elif not only_prot:
+            molecule_type = '(Protein OR RNA)'
+        else:
+            molecule_type = 'Protein'
+
         response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition", "q": super().join_with_AND([
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,molecule_type", "q": super().join_with_AND([
                 ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
-                ('assembly_composition', '*protein*')
+                ('molecule_type', molecule_type)
             ]),
         })
         self.results = []
@@ -487,19 +494,17 @@ class UniqueChains(PDBeSolrSearch):
         super().__init__()
 
         if only_rna:
-            only_prot = False
-        if only_prot or only_rna:
-            q = super().join_with_AND([
-                ('pdb_id', pdbcode),
-                ('molecule_type', 'Protein' if only_prot else 'RNA')
-            ])
+            molecule_type = 'RNA'
+        elif not only_prot:
+            molecule_type = '(Protein OR RNA)'
         else:
-            q = super().join_with_AND([
-                ('pdb_id', pdbcode),
-            ])
-
+            molecule_type = 'Protein'
         response = self.solr.search(**{
-            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition,molecule_type", "q":  q})
+            "rows": UNLIMITED_ROWS, "fl": "pdb_id,entity_id,chain_id,assembly_composition,molecule_type", "q": super().join_with_AND([
+                ('pdb_id', pdbcode),
+                ('molecule_type', molecule_type)
+            ])
+        })
         self.results = []
         for i in range(len(response.documents)):
             chain_id = response.documents[i]['chain_id']

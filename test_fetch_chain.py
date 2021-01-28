@@ -1,4 +1,4 @@
-from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedProteins
+from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs
 from datetime import date, datetime, timedelta
 
 
@@ -34,12 +34,16 @@ def test_fetchChainInfo_SimilarChains():
 def test_fetchChainInfo_ReleasedProteins():
     from_date = datetime(2020, 11, 10).date()
     to_date = datetime(2020, 11, 18).date()
-    res = ReleasedProteins(from_date, to_date).get()
+    res = ReleasedPDBs(from_date, to_date).get()
     assert str(res).startswith("[('6y9d', 'A'), ('6wv7', 'A'), ('6wyg', 'A'), ('6yve', 'AAA'), ('6z2x', 'C'), ('6z2x', 'E'),")
 
 
 def test_fetchChainInfo_ReleasedProteins_2():
     from_date = "2020-11-18"
-    res = ReleasedProteins(from_date).get()
+    res = ReleasedPDBs(from_date).get()
+    assert len(res) == 490
     assert str(res).startswith("[('6y9d', 'A'), ('6yve', 'AAA'), ('6zj6', 'AAA'), ('6xif', 'A'), ('6xif', 'B'), ('6xif', 'I'), ('6xox', 'A'),")
-
+    res = ReleasedPDBs(from_date, only_rna=True).get()
+    assert str(res) == "[('6wvj', 'R'), ('6vem', 'A'), ('6wbr', 'B'), ('6hpj', 'A'), ('6wc0', 'B')]"
+    res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
+    assert len(res) == 495
