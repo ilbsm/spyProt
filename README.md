@@ -1,3 +1,5 @@
-# spyProt [![Build Status](https://travis-ci.com/Zedelghem/spyProt.svg?branch=master)](https://travis-ci.com/Zedelghem/spyProt)
+# spyProt ![Python package](https://github.com/ilbsm/spyProt/workflows/Python%20package/badge.svg)
+
 Rapid protein overview from multiple databases
 
+Have a look at tests to see how to use it.
