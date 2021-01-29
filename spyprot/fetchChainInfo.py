@@ -376,7 +376,7 @@ class SimilarChains(PDBeSolrSearch):
             self.seq = seq if seq else self.get_seq()
             self.get_similar()
             self.translate_enity_ids_to_chains()
-        except (urllib.error.URLError or HTTPError or SequenceException) as he:
+        except (urllib.error.URLError, HTTPError, SequenceException) as he:
             raise SearchException('Problem looking for similar chains to: ' + pdb + ' ' + chain + ': ' + str(he))
 
     def get_seq(self):
@@ -385,7 +385,7 @@ class SimilarChains(PDBeSolrSearch):
             chain_id = documents[i]['chain_id']
             if self.chain in chain_id:
                 return documents[i]['molecule_sequence']
-        raise SearchException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
+        raise SequenceException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
 
     def get_similar(self):
         query = """
@@ -419,12 +419,14 @@ class SimilarChains(PDBeSolrSearch):
         url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
         try:
             response = requests.get(url)
+            if response.status_code != 200:
+                raise SequenceException(response.text)
             result = response.json()
             if 'result_set' in result:
                 for el in result['result_set']:
                     self.identifiers.append(el['identifier'])
         except Exception as er:
-            raise SearchException('SimilarChains: Error in response from RCSB search for URL:\n' + url + '\n' + str(er))
+            raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (self.pdb, self.chain, urllib.parse.unquote(url), str(er)))
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
