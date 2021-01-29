@@ -419,6 +419,8 @@ class SimilarChains(PDBeSolrSearch):
         url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
         try:
             response = requests.get(url)
+            if response.status_code == 204 and response.text == '':
+                return
             if response.status_code != 200:
                 raise SequenceException(response.text)
             result = response.json()

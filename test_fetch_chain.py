@@ -33,6 +33,8 @@ def test_fetchChainInfo_SimilarChains():
     assert str(sim.get()) == "[('1J85', 'A'), ('3E5Y', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('4KGN', 'A'), ('4PZK', 'A'), ('5CO4', 'A'), ('6AHW', 'A'), ('6QH8', 'A'), ('6QKV', 'A')]"
     sim = SimilarChains('6lt7', 'A', identity=30)
     assert len(sim.get()) == 3
+    sim = SimilarChains(pdb='7css', chain='A')
+    assert len(sim.get()) == 0
 
 
 def test_fetchChainInfo_SimilarChains_fail():
