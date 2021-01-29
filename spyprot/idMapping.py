@@ -74,7 +74,7 @@ def PDB_Uniprot_update_list(local_list_file_path="pdb_chain_uniprot.lst", no_dow
         else:
             print("There is a more up to date mapping file available online. Replacing it.")
             if not no_download:
-                download_file(remote_url, output_file)
+                download_file(remote_url, local_list_file_path)
             return False
 
     except:
