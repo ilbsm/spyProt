@@ -21,7 +21,8 @@ def test_fetchChainInfo_UniqueChains_2():
 
 def test_fetchChainInfo_UniqueChains_3():
     f = UniqueChains('6zj3', only_rna=True)
-    assert str(f.get()) == "['S1', 'S2', 'S3', 'S4', 'S5', 'LA', 'LB', 'LC', 'LD', 'LE', 'LF', 'LG', 'LH', 'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO']"
+    assert str(
+        f.get()) == "['S1', 'S2', 'S3', 'S4', 'S5', 'LA', 'LB', 'LC', 'LD', 'LE', 'LF', 'LG', 'LH', 'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO']"
     f = UniqueChains('6zj3', only_prot=True)
     assert len(f.get()) == 78
     f = UniqueChains('6zj3', only_prot=False, only_rna=False)
@@ -54,14 +55,16 @@ def test_fetchChainInfo_ReleasedProteins():
     from_date = datetime(2020, 11, 10).date()
     to_date = datetime(2020, 11, 18).date()
     res = ReleasedPDBs(from_date, to_date).get()
-    assert str(res).startswith("[('5rw2', 'A'), ('5rw3', 'A'), ('5rw4', 'A'), ('5rw5', 'A'), ('5rw6', 'A'), ('5rw7', 'A'), ('5rw8', 'A'), ('5rw9', 'A'), ('5rwa', 'A'),")
+    assert str(res).startswith(
+        "[('5rw2', 'A'), ('5rw3', 'A'), ('5rw4', 'A'), ('5rw5', 'A'), ('5rw6', 'A'), ('5rw7', 'A'), ('5rw8', 'A'), ('5rw9', 'A'), ('5rwa', 'A'),")
 
 
 def test_fetchChainInfo_ReleasedProteins_2():
     from_date = "2020-11-18"
     res = ReleasedPDBs(from_date).get()
     assert len(res) == 490
-    assert str(res).startswith("[('6hpj', 'B'), ('6kml', 'A'), ('6kml', 'B'), ('6kmq', 'A'), ('6kmq', 'B'), ('6l9k', 'A'), ('6l9k', 'Q'), ('6l9l', 'A'), ('6l9l', 'B'), ('6l9l', 'C'),")
+    assert str(res).startswith(
+        "[('6hpj', 'B'), ('6kml', 'A'), ('6kml', 'B'), ('6kmq', 'A'), ('6kmq', 'B'), ('6l9k', 'A'), ('6l9k', 'Q'), ('6l9l', 'A'), ('6l9l', 'B'), ('6l9l', 'C'),")
     res = ReleasedPDBs(from_date, only_rna=True).get()
     assert str(res) == "[('6hpj', 'A'), ('6vem', 'A'), ('6wbr', 'B'), ('6wc0', 'B'), ('6wvj', 'R')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()

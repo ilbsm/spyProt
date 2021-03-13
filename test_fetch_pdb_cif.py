@@ -2,15 +2,16 @@ from spyprot.fetchChainInfo import PdbFile, MMCIFfile
 import tempfile
 import os
 
+
 def test_download_pdb_files():
-    dir = os.path.join(tempfile.gettempdir(),'test_pdb')
+    dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
     try:
         os.makedirs(dir)
     except:
         pass
     p = PdbFile(dir, "1j85", "A").download()
     p = PdbFile(dir, "1k36", "A").download()
-    p = PdbFile(dir,"1k36", "A", 'CA').download()
+    p = PdbFile(dir, "1k36", "A", 'CA').download()
     p = MMCIFfile(dir, "1k36", "A").download()
 
     # Download and extract chain 5
@@ -28,9 +29,7 @@ def test_download_pdb_files():
 
     PdbFile(dir, "4v7m", "B3").download()
     # Bundle but not translation
-    #PdbFile(dir, "6az3", "2").download()
+    # PdbFile(dir, "6az3", "2").download()
     PdbFile(dir, "6az3", "2", 'C3\'').download()
 
-
-
-#test_download_pdb_files()
+# test_download_pdb_files()

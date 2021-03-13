@@ -30,6 +30,7 @@ def test_fetch_pdb_info():
 
 def test_cddf_parser():
     d = getCath("1j85", "A")
-    assert d[0]['DOMAIN'] == '1j85A00' and d[0]['CATHCODE']=='3.40.1280.10' and d[0]['CLASS'] == 'Alpha Beta'
+    assert d[0]['DOMAIN'] == '1j85A00' and d[0]['CATHCODE'] == '3.40.1280.10' and d[0]['CLASS'] == 'Alpha Beta'
+
 
 test_cddf_parser()

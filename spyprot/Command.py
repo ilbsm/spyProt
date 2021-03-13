@@ -20,6 +20,7 @@ class Command(object):
 
        cmd: string - command to run
        '''
+
     def __init__(self, cmd):
         self.cmd = cmd
         self.process = None
@@ -46,9 +47,11 @@ class Command(object):
                     logfile_handle = open(logfile, 'w+')
                     self.logerrfile = logfile + ".err"
                     logerrfile_handle = open(self.logerrfile, 'w+')
-                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=logfile_handle, stderr=logerrfile_handle)
+                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=logfile_handle,
+                                                    stderr=logerrfile_handle)
                 else:
-                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+                                                    stderr=subprocess.PIPE)
                 self.o, self.e = self.process.communicate()
                 if logfile:
                     logfile_handle.flush()
@@ -64,14 +67,16 @@ class Command(object):
                 self.rcode = -100
                 return
 
-        thread = threading.Thread(target=target) # thread, not process - to easily comuniacate with PIPE and return rcode.
+        thread = threading.Thread(
+            target=target)  # thread, not process - to easily comuniacate with PIPE and return rcode.
         thread.start()
 
         thread.join(timeout)
         if thread.is_alive():
-            #self.process.terminate() # is stoping main process not those run from it - then thread.join() is waiting for shell (and other children) to end!
-            #os.killpg(os.getpgid(self.process.pid), signal.SIGKILL) # Send the signal to all the process groups - including this one which is wating for next thread.join()...
-            kill(self.process.pid) # using psutil, but could be written without it - searching in processes for children.
+            # self.process.terminate() # is stoping main process not those run from it - then thread.join() is waiting for shell (and other children) to end!
+            # os.killpg(os.getpgid(self.process.pid), signal.SIGKILL) # Send the signal to all the process groups - including this one which is wating for next thread.join()...
+            kill(
+                self.process.pid)  # using psutil, but could be written without it - searching in processes for children.
             thread.join()
             raise Exception('Processing binary file has been terminated by timeout. Error? Loop?')
         if self.process:

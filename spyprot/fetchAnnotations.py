@@ -6,20 +6,21 @@
 import datetime
 import time
 import urllib2 as urllib
-import gzip,re
+import gzip, re
 import os
 from os import path
 
+REFRESH_FILE_INTERVAL = 7 * 24 * 3600  # Refresh every week
 
-REFRESH_FILE_INTERVAL = 7*24*3600 # Refresh every week
+PDB_CHAIN_ENZYME = ["ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz",
+                    "pdb_chain_enzyme.tsv.gz"]
+ENZYME_DAT = ["https://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
 
-PDB_CHAIN_ENZYME = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz", "pdb_chain_enzyme.tsv.gz" ]
-ENZYME_DAT = [ "https://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat"]
+PDB_CHAIN_PFAM = ["ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz",
+                  "pdb_chain_pfam.tsv.gz"]
+PFAM_DESC = ["http://pfam.xfam.org/families?output=text", "pdb_chain_pfam_desc"]
 
-PDB_CHAIN_PFAM = [ "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_pfam.tsv.gz", "pdb_chain_pfam.tsv.gz" ]
-PFAM_DESC = [ "http://pfam.xfam.org/families?output=text", "pdb_chain_pfam_desc" ]
-
-DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local","spyprot")
+DEFAULT_DATA_FILE_PATH = path.join(path.expanduser("~"), ".local", "spyprot")
 
 
 class AnnotationBase:
@@ -29,7 +30,9 @@ class AnnotationBase:
        Annotations are parsed from files downloaded from databases and stored locally in:
        $HOME/.local/spyprot/
     '''
-    def __init__(self, files, pdb, chain='A', data_file_path=DEFAULT_DATA_FILE_PATH, refresh_file_interval=REFRESH_FILE_INTERVAL):
+
+    def __init__(self, files, pdb, chain='A', data_file_path=DEFAULT_DATA_FILE_PATH,
+                 refresh_file_interval=REFRESH_FILE_INTERVAL):
         self.data_file_path = data_file_path
         if not path.exists(data_file_path):
             os.makedirs(data_file_path)
@@ -52,8 +55,9 @@ class AnnotationBase:
 
     def download_if_not_exist(self, file_locs):
         enz_file = path.join(self.data_file_path, file_locs[1])
-        if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(enz_file) and time.mktime(datetime.datetime.now().timetuple())-os.stat(enz_file).st_mtime > self.refresh_file_interval):
-            print('downloading file: ' + enz_file + " from: "  + file_locs[0])
+        if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(enz_file) and time.mktime(
+                datetime.datetime.now().timetuple()) - os.stat(enz_file).st_mtime > self.refresh_file_interval):
+            print('downloading file: ' + enz_file + " from: " + file_locs[0])
             AnnotationBase.touch(enz_file + ".flg")
             try:
                 f = urllib.urlopen(file_locs[0])
@@ -86,31 +90,32 @@ class ECAnnotation(AnnotationBase):
        ======
        results: list of tuples of EC Code and EC name
        '''
+
     def __init__(self, pdb, chain='A'):
         AnnotationBase.__init__(self, [PDB_CHAIN_ENZYME, ENZYME_DAT], pdb, chain)
-        q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<ec>.*)$')
+        q = re.compile(r'^' + self.pdb + '\t' + self.chain + '\t(.*)\t(?P<ec>.*)$')
         with gzip.open(self.first_file) as s:
             for line in s.readlines():
                 z = q.match(line.decode('utf-8'))
                 if z:
-                    self.identifiers.append( str(z.group('ec')) )
+                    self.identifiers.append(str(z.group('ec')))
             for e in self.identifiers:
                 o = self._getNameLocal(e)
                 if o == "" and not e.endswith("-"):
                     o = self._getName(e)
-                self.results.append( (e, o) )
+                self.results.append((e, o))
 
-    def _getName(self,ec):
+    def _getName(self, ec):
         o = ""
         try:
-            f = urllib.urlopen("https://enzyme.expasy.org/EC/"+ec+".txt")
+            f = urllib.urlopen("https://enzyme.expasy.org/EC/" + ec + ".txt")
             q = re.compile(r'^DE.{3}(?P<name>.*)$')
             for line in f.readlines():
                 z = q.match(line.decode('utf-8'))
                 if z:
                     o = z.group('name')
                     break
-                
+
         except Exception as e:
             print("Problem getting EC name: " + ec + "\n" + str(e))
         return o
@@ -153,28 +158,28 @@ class PfamAnnotation(AnnotationBase):
        ======
        results: list of tuples containing attributes: pdbid, chain, pfam_short, pfam_desc and pfam accession code
        '''
-    def __init__(self,pdb,chain='A'):
+
+    def __init__(self, pdb, chain='A'):
         AnnotationBase.__init__(self, [PDB_CHAIN_PFAM, PFAM_DESC], pdb, chain)
-        q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<pfam>.*)\t(.*)$', re.M)
+        q = re.compile(r'^' + self.pdb + '\t' + self.chain + '\t(.*)\t(?P<pfam>.*)\t(.*)$', re.M)
         with gzip.open(self.first_file) as s:
             for line in s.readlines():
                 line = line.decode('utf-8')
                 z = q.match(line)
                 if z:
-                    self.identifiers.append( str(z.group('pfam')) )
+                    self.identifiers.append(str(z.group('pfam')))
             for e in self.identifiers:
                 a, b, c = self._getNames(e)
                 self.results.append((pdb, chain, a, b, c))
 
     def _getNames(self, pfam):
-        q = re.compile(r'^'+pfam+'\t(?P<pfam_short>.*)\t(?P<pfam_desc>.*)$')
+        q = re.compile(r'^' + pfam + '\t(?P<pfam_short>.*)\t(?P<pfam_desc>.*)$')
         with open(self.sec_file) as sd:
             for line in sd:
                 z = q.match(line)
                 if z:
-                    return z.group('pfam_short'),z.group('pfam_desc'),pfam
-        return "","",""
-
+                    return z.group('pfam_short'), z.group('pfam_desc'), pfam
+        return "", "", ""
 
 # class getAnnotations:
 #     '''Retrieve PFAM annotations for a given PDBID and Chain directly from RCSB

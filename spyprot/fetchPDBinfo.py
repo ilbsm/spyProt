@@ -370,9 +370,9 @@ class fetchPDBinfo(XmlPdbParser):
 
 
 if __name__ == "__main__":
-#    pdb=argv[1].lower()
+    #    pdb=argv[1].lower()
     r = fetchPDBinfo('6CZR', '1a', '/tmp', localfile=False, atom="C3'")
-    #r = fetchPDBinfo('/tmp','1j85', 'A', localfile=False, atom="CA")
+    # r = fetchPDBinfo('/tmp','1j85', 'A', localfile=False, atom="CA")
     print(r.getSeqLength())
     print(r.getCAlen())
     # b = getCoordinates("/tmp", "1uak")
@@ -393,5 +393,3 @@ if __name__ == "__main__":
     # print("start",structure_start)
     # doi, pubmed, pubtitle, prottitle, source, keyword, molname =  a.getPubtitlePubmed()
     # print("rest","\n".join([doi, pubmed, pubtitle, prottitle, source, keyword, molname]))
-
-

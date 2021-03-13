@@ -14,6 +14,7 @@ hcath = DEFAULT_DATA_FILE_PATH + '/cath-domain-description-file.txt'
 cath_uri = \
     'http://download.cathdb.info/cath/releases/latest-release/cath-classification-data/cath-domain-description-file.txt'
 
+
 # egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" CathDomainDescriptionFile_org >CathDomainDescriptionFile
 
 

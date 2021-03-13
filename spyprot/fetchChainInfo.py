@@ -135,14 +135,16 @@ class PdbFile(ProteinFile):
                 self.filter_by_chain()
         except urllib.HTTPError as e:
             print(self.pdbcode + " " + self.chain + " ...trying to download from PDB Bundle")
-            response = urllib.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
+            response = urllib.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[
+                                                                                                1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
             tar = tarfile.open(fileobj=response, mode="r|gz")
             tar.extractall(self.dir)
             tar.close()
-            mapFile, mapChain = self.parsePdbBundleChainIdFile(self.dir + '/' + self.pdbcode.lower() + '-chain-id-mapping.txt')
+            mapFile, mapChain = self.parsePdbBundleChainIdFile(
+                self.dir + '/' + self.pdbcode.lower() + '-chain-id-mapping.txt')
             newChain = mapChain.get(self.chain)
             pdbBundleFile = self.dir + '/' + mapFile.get(self.chain)
-            if newChain!=self.chain:
+            if newChain != self.chain:
                 self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
             else:
                 shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
@@ -169,34 +171,34 @@ class PdbFile(ProteinFile):
             while line:
                 line = line.strip().rstrip()
                 cnt += 1
-                if line.find('pdb-bundle')>=0:
+                if line.find('pdb-bundle') >= 0:
                     actualFile = line[:-1]
                     files.append(actualFile)
                     line = fp.readline()
                     continue
-                elif actualFile!='' and line!='':
+                elif actualFile != '' and line != '':
                     mapping = line.split()
                     key = mapping[1].strip()
                     val = mapping[0].strip()
-                    mapChain[key]=val
+                    mapChain[key] = val
                     mapFile[key] = actualFile
                 line = fp.readline()
             return mapFile, mapChain
 
     # Remapping chain for PDB bundles with many subchains
     def parsePdbAndTranslateChain(self, pdbFileIn, chain, newChain):
-        #print chain + '->' + newChain
+        # print chain + '->' + newChain
         self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
         with open(pdbFileIn, "r") as infile, open(self.out_file, "w") as outfile:
             reader = csv.reader(infile)
             for i, line in enumerate(reader):
-                if line[0].find('ATOM')==0 or line[0].find('HETATM')==0:
+                if line[0].find('ATOM') == 0 or line[0].find('HETATM') == 0:
                     newLine = list(line[0])
-                    if newLine[21]==newChain:
+                    if newLine[21] == newChain:
                         if len(chain) > 2:
                             newLine += chain
                             newLine[21] = "%"
-                        elif len(chain)>1:
+                        elif len(chain) > 1:
                             newLine[20] = chain[0]
                             newLine[21] = chain[1]
                         else:
@@ -313,14 +315,16 @@ class PDBeSolrSearch:
 
     def exec_query(self, field_list, query_details):
         try:
-            query = { "rows": UNLIMITED_ROWS, "fl": field_list, "q": self.join_with_AND(query_details)}
+            query = {"rows": UNLIMITED_ROWS, "fl": field_list, "q": self.join_with_AND(query_details)}
             response = self.solr.search(**query)
             documents = response.documents
             if DEBUG:
-                logging.getLogger().debug("Found %d matching entities in %d entries." % (len(documents), len({rd["pdb_id"] for rd in documents})))
+                logging.getLogger().debug("Found %d matching entities in %d entries." % (
+                len(documents), len({rd["pdb_id"] for rd in documents})))
             return documents
         except Exception as e:
-            raise SearchException('%s: error getting query response from: %s for: %s\n %s' % (self.__class__.__name__ , PDBE_SOLR_URL, str(query), str(e)))
+            raise SearchException('%s: error getting query response from: %s for: %s\n %s' % (
+            self.__class__.__name__, PDBE_SOLR_URL, str(query), str(e)))
 
     def get(self):
         return self.results
@@ -341,6 +345,7 @@ class IdenticalChains(PDBeSolrSearch):
        ==========
        pdbcode: string - PDB ID
     '''
+
     def __init__(self, pdbcode, chain):
         PDBeSolrSearch.__init__(self)
 
@@ -371,6 +376,7 @@ class SimilarChains(PDBeSolrSearch):
        seq: string - sequence to compare against - instead od pdbcode and chain
        identity: int - (percentage) of sequence identity
     '''
+
     def __init__(self, pdb=None, chain='A', seq=None, identity=40):
         PDBeSolrSearch.__init__(self)
         self.chain = chain
@@ -435,7 +441,8 @@ class SimilarChains(PDBeSolrSearch):
                 for el in result['result_set']:
                     self.identifiers.append(el['identifier'])
         except Exception as er:
-            raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (self.pdb, self.chain, urllib.unquote(url), str(er)))
+            raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (
+            self.pdb, self.chain, urllib.unquote(url), str(er)))
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
@@ -443,7 +450,8 @@ class SimilarChains(PDBeSolrSearch):
         ident_list = self.identifiers[0]
         for entr_ent in self.identifiers[1:]:
             ident_list += ' OR ' + entr_ent.lower()
-        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('entry_entity', '(' + ident_list + ')')])
+        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition",
+                                    [('entry_entity', '(' + ident_list + ')')])
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
@@ -467,6 +475,7 @@ class ReleasedPDBs(PDBeSolrSearch):
           to_date: datetime or string in format YYYY-MM-DD
           uniq_chains: if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
        '''
+
     def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False):
         PDBeSolrSearch.__init__(self)
         if type(from_date) is datetime.date:
@@ -511,6 +520,7 @@ class UniqueChains(PDBeSolrSearch):
        ==========
        pdbcode: string - PDB ID
     '''
+
     def __init__(self, pdbcode, only_prot=True, only_rna=False):
         PDBeSolrSearch.__init__(self)
 
