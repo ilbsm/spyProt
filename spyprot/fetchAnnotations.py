@@ -4,7 +4,9 @@
 # based on:
 # Copyright Michal Jamroz, 2014, jamroz@chem.uw.edu.pl
 import datetime
-import urllib.request, urllib.error, urllib.parse,gzip,re 
+import time
+import urllib2 as urllib
+import gzip,re
 import os
 from os import path
 
@@ -50,11 +52,11 @@ class AnnotationBase:
 
     def download_if_not_exist(self, file_locs):
         enz_file = path.join(self.data_file_path, file_locs[1])
-        if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(enz_file) and datetime.datetime.now().timestamp()-os.stat(enz_file).st_mtime > self.refresh_file_interval):
+        if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(enz_file) and time.mktime(datetime.datetime.now().timetuple())-os.stat(enz_file).st_mtime > self.refresh_file_interval):
             print('downloading file: ' + enz_file + " from: "  + file_locs[0])
             AnnotationBase.touch(enz_file + ".flg")
             try:
-                f = urllib.request.urlopen(file_locs[0])
+                f = urllib.urlopen(file_locs[0])
                 fw = open(enz_file + "_NEW", "wb")
                 fw.write(f.read())
                 fw.close()
@@ -85,13 +87,13 @@ class ECAnnotation(AnnotationBase):
        results: list of tuples of EC Code and EC name
        '''
     def __init__(self, pdb, chain='A'):
-        super().__init__([PDB_CHAIN_ENZYME, ENZYME_DAT], pdb, chain)
+        AnnotationBase.__init__(self, [PDB_CHAIN_ENZYME, ENZYME_DAT], pdb, chain)
         q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<ec>.*)$')
         with gzip.open(self.first_file) as s:
             for line in s.readlines():
                 z = q.match(line.decode('utf-8'))
                 if z:
-                    self.identifiers.append( z.group('ec') )
+                    self.identifiers.append( str(z.group('ec')) )
             for e in self.identifiers:
                 o = self._getNameLocal(e)
                 if o == "" and not e.endswith("-"):
@@ -101,7 +103,7 @@ class ECAnnotation(AnnotationBase):
     def _getName(self,ec):
         o = ""
         try:
-            f = urllib.request.urlopen("https://enzyme.expasy.org/EC/"+ec+".txt")
+            f = urllib.urlopen("https://enzyme.expasy.org/EC/"+ec+".txt")
             q = re.compile(r'^DE.{3}(?P<name>.*)$')
             for line in f.readlines():
                 z = q.match(line.decode('utf-8'))
@@ -118,7 +120,7 @@ class ECAnnotation(AnnotationBase):
             return ""
         o = ""
         try:
-            with open(self.sec_file, encoding='utf-8') as f:
+            with open(self.sec_file) as f:
                 q = re.compile(r'^ID.{3}(' + ec + ')$')
                 id_fnd = False
                 for line in f.readlines():
@@ -152,21 +154,21 @@ class PfamAnnotation(AnnotationBase):
        results: list of tuples containing attributes: pdbid, chain, pfam_short, pfam_desc and pfam accession code
        '''
     def __init__(self,pdb,chain='A'):
-        super().__init__([PDB_CHAIN_PFAM, PFAM_DESC], pdb, chain)
+        AnnotationBase.__init__(self, [PDB_CHAIN_PFAM, PFAM_DESC], pdb, chain)
         q = re.compile(r'^'+self.pdb+'\t'+self.chain+'\t(.*)\t(?P<pfam>.*)\t(.*)$', re.M)
         with gzip.open(self.first_file) as s:
             for line in s.readlines():
                 line = line.decode('utf-8')
                 z = q.match(line)
                 if z:
-                    self.identifiers.append( z.group('pfam') )
+                    self.identifiers.append( str(z.group('pfam')) )
             for e in self.identifiers:
                 a, b, c = self._getNames(e)
                 self.results.append((pdb, chain, a, b, c))
 
     def _getNames(self, pfam):
         q = re.compile(r'^'+pfam+'\t(?P<pfam_short>.*)\t(?P<pfam_desc>.*)$')
-        with open(self.sec_file, encoding='utf-8') as sd:
+        with open(self.sec_file) as sd:
             for line in sd:
                 z = q.match(line)
                 if z:

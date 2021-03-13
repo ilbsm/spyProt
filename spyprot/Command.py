@@ -2,7 +2,7 @@
 from os import SEEK_END
 import io
 import subprocess
-from subprocess import TimeoutExpired
+from subprocess32 import TimeoutExpired
 import threading
 # source https://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
 import psutil

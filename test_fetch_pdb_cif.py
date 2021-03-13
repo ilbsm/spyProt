@@ -4,7 +4,10 @@ import os
 
 def test_download_pdb_files():
     dir = os.path.join(tempfile.gettempdir(),'test_pdb')
-    os.makedirs(dir, exist_ok=True)
+    try:
+        os.makedirs(dir)
+    except:
+        pass
     p = PdbFile(dir, "1j85", "A").download()
     p = PdbFile(dir, "1k36", "A").download()
     p = PdbFile(dir,"1k36", "A", 'CA').download()
@@ -30,4 +33,4 @@ def test_download_pdb_files():
 
 
 
-test_download_pdb_files()
+#test_download_pdb_files()

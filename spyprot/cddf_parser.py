@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib.error
-import urllib.request
+import urllib2 as urllib
 from os import path
 from re import compile
 from spyprot import Command
@@ -48,7 +47,7 @@ def getCath(pdbcode, chain):
     chain = chain
     record = compile(r'^DOMAIN    ' + pdbcode + chain)
     results = []
-    with open(hcath, 'r', encoding='utf-8') as cddf:
+    with open(hcath, 'r') as cddf:
         found = False
         for line in cddf:
             if record.match(line):

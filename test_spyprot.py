@@ -22,7 +22,6 @@ def test_get_pfam_annotations():
 
 def test_fetch_pdb_info():
     from Bio import BiopythonExperimentalWarning
-    import tempfile
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', BiopythonExperimentalWarning)
         a = fetchPDBinfo("1uak", "A")
@@ -31,4 +30,8 @@ def test_fetch_pdb_info():
 
 def test_cddf_parser():
     d = getCath("1j85", "A")
-    assert str(d)=="[{'pdbcode': '1j85', 'chain': 'A', 'DOMAIN': '1j85A00', 'CATHCODE': '3.40.1280.10', 'CLASS': 'Alpha Beta', 'ARCH': '3-Layer(aba) Sandwich', 'TOPOL': 'Alpha/beta knot', 'HOMOL': 'Alpha/beta knot'}]"
+    assert str(d)=="[{'DOMAIN': '1j85A00', 'chain': 'A', 'HOMOL': 'Alpha/beta knot', 'CATHCODE': '3.40.1280.10', 'TOPOL': 'Alpha/beta knot', 'pdbcode': '1j85', 'ARCH': '3-Layer(aba) Sandwich', 'CLASS': 'Alpha Beta'}]"
+
+
+#d = getCath("1j85", "A")
+#print(d)

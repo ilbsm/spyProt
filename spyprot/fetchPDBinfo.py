@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import urllib.error
-import urllib.parse
-import urllib.request
+import urllib2 as urllib
 from itertools import count, groupby
 from os import path
 import tempfile
@@ -28,7 +26,7 @@ class XmlPdbParser:
     def download_if_not_exist(self):
         pdb_xml_file = path.join(self.work_dir, self.pdb + '.xml.gz')
         if not path.isfile(pdb_xml_file):
-            f = urllib.request.urlopen('https://www.rcsb.org/pdb/files/' + self.pdb + '.xml.gz')
+            f = urllib.urlopen('https://www.rcsb.org/pdb/files/' + self.pdb + '.xml.gz')
             fw = open(pdb_xml_file, "wb")
             fw.write(f.read())
             fw.close()
@@ -38,7 +36,7 @@ class XmlPdbParser:
 
 class getCoordinates(XmlPdbParser):
     def __init__(self, pdbcode, work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
-        super().__init__(pdbcode, None, work_dir, localfile, atom=atom)
+        XmlPdbParser.__init__(self, pdbcode, None, work_dir, localfile, atom=atom)
         l = self.root.xpath(
             "//PDBx:atom_siteCategory/PDBx:atom_site[PDBx:auth_atom_id=\"" + atom + "\"][PDBx:pdbx_PDB_model_num='1'][PDBx:group_PDB='ATOM']/PDBx:auth_asym_id",
             namespaces=self.NS)
@@ -142,7 +140,7 @@ class getCoordinates(XmlPdbParser):
 
 class fetchPDBinfo(XmlPdbParser):
     def __init__(self, pdbcode, chain='A', work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
-        super().__init__(pdbcode, chain, work_dir, localfile, atom=atom)
+        XmlPdbParser.__init__(self, pdbcode, chain, work_dir, localfile, atom=atom)
         self.codification = {"ALA": 'A',
                              "CYS": 'C',
                              "ASP": 'D',

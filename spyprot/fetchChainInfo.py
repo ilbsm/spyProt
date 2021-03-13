@@ -3,7 +3,7 @@ import os
 import csv
 import shutil
 import tarfile
-import urllib.request, urllib.error, urllib.parse
+import urllib2 as urllib
 import datetime
 import json
 from os import makedirs, path
@@ -127,15 +127,15 @@ class PdbFile(ProteinFile):
         except OSError as e:
             pass
         try:
-            response = urllib.request.urlopen('https://files.rcsb.org/view/' + self.pdbcode.upper() + '.pdb')
+            response = urllib.urlopen('https://files.rcsb.org/view/' + self.pdbcode.upper() + '.pdb')
             html = response.read().decode("UTF-8")
             with open(self.out_file, 'w') as myfile:
                 myfile.write(html)
             if self.chain is not None:
                 self.filter_by_chain()
-        except urllib.error.HTTPError as e:
+        except urllib.HTTPError as e:
             print(self.pdbcode + " " + self.chain + " ...trying to download from PDB Bundle")
-            response = urllib.request.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
+            response = urllib.urlopen('https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
             tar = tarfile.open(fileobj=response, mode="r|gz")
             tar.extractall(self.dir)
             tar.close()
@@ -159,7 +159,7 @@ class PdbFile(ProteinFile):
 
     @staticmethod
     def parsePdbBundleChainIdFile(chainFile):
-        with open(chainFile, encoding='utf-8') as fp:
+        with open(chainFile) as fp:
             line = fp.readline()
             cnt = 1
             files = []
@@ -187,7 +187,7 @@ class PdbFile(ProteinFile):
     def parsePdbAndTranslateChain(self, pdbFileIn, chain, newChain):
         #print chain + '->' + newChain
         self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
-        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(self.out_file, "w", encoding='utf-8') as outfile:
+        with open(pdbFileIn, "r") as infile, open(self.out_file, "w") as outfile:
             reader = csv.reader(infile)
             for i, line in enumerate(reader):
                 if line[0].find('ATOM')==0 or line[0].find('HETATM')==0:
@@ -231,7 +231,7 @@ class MMCIFfile(ProteinFile):
             makedirs(self.dir)
         except OSError as e:
             pass
-        response = urllib.request.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
+        response = urllib.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
         html = response.read().decode("UTF-8")
         with open(self.cif_file, 'w') as myfile:
             myfile.write(html)
@@ -324,6 +324,10 @@ class PDBeSolrSearch:
 
     def get(self):
         return self.results
+        # res_decoded = []
+        # for res in self.results:
+        #     res_decoded.append(str(res))
+        # return res_decoded
 
 
 class IdenticalChains(PDBeSolrSearch):
@@ -338,15 +342,18 @@ class IdenticalChains(PDBeSolrSearch):
        pdbcode: string - PDB ID
     '''
     def __init__(self, pdbcode, chain):
-        super().__init__()
+        PDBeSolrSearch.__init__(self)
 
         self.results = []
         documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('pdb_id', pdbcode)])
 
         for i in range(len(documents)):
             chain_id = documents[i]['chain_id']
-            if chain in chain_id:
-                self.results = sorted(chain_id)
+            if chain in sorted(chain_id):
+                chains_to_add = []
+                for ch in chain_id:
+                    chains_to_add.append(str(ch))
+                self.results = sorted(chains_to_add)
                 break
 
 
@@ -365,7 +372,7 @@ class SimilarChains(PDBeSolrSearch):
        identity: int - (percentage) of sequence identity
     '''
     def __init__(self, pdb=None, chain='A', seq=None, identity=40):
-        super().__init__()
+        PDBeSolrSearch.__init__(self)
         self.chain = chain
         self.pdb = pdb.lower() if pdb else None
         self.identity = float(identity / 100)
@@ -376,7 +383,7 @@ class SimilarChains(PDBeSolrSearch):
             self.seq = seq if seq else self.get_seq()
             self.get_similar()
             self.translate_enity_ids_to_chains()
-        except (urllib.error.URLError, HTTPError, SequenceException) as he:
+        except (urllib.URLError, HTTPError, SequenceException) as he:
             raise SearchException('Problem looking for similar chains to: ' + pdb + ' ' + chain + ': ' + str(he))
 
     def get_seq(self):
@@ -416,7 +423,7 @@ class SimilarChains(PDBeSolrSearch):
   }
 }               
         """ % (self.identity, self.seq)
-        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
+        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.quote(query))
         try:
             response = requests.get(url)
             if response.status_code == 204 and response.text == '':
@@ -428,7 +435,7 @@ class SimilarChains(PDBeSolrSearch):
                 for el in result['result_set']:
                     self.identifiers.append(el['identifier'])
         except Exception as er:
-            raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (self.pdb, self.chain, urllib.parse.unquote(url), str(er)))
+            raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (self.pdb, self.chain, urllib.unquote(url), str(er)))
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
@@ -440,7 +447,7 @@ class SimilarChains(PDBeSolrSearch):
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
-            self.results.append((pid.upper(), sorted(chain_id)[0]))
+            self.results.append((str(pid.upper()), str(sorted(chain_id)[0])))
 
     def get(self):
         return sorted(self.results)
@@ -461,7 +468,7 @@ class ReleasedPDBs(PDBeSolrSearch):
           uniq_chains: if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
        '''
     def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False):
-        super().__init__()
+        PDBeSolrSearch.__init__(self)
         if type(from_date) is datetime.date:
             from_date = from_date.strftime("%Y-%m-%d")
         if to_date == '':
@@ -486,10 +493,11 @@ class ReleasedPDBs(PDBeSolrSearch):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
             if uniq_chains:
-                self.results.append((pid, sorted(chain_id)[0]))
+                self.results.append((str(pid), str(sorted(chain_id)[0])))
             else:
                 if pid not in self.results:
                     self.results.append(pid)
+        self.results = sorted(self.results)
 
 
 class UniqueChains(PDBeSolrSearch):
@@ -504,7 +512,7 @@ class UniqueChains(PDBeSolrSearch):
        pdbcode: string - PDB ID
     '''
     def __init__(self, pdbcode, only_prot=True, only_rna=False):
-        super().__init__()
+        PDBeSolrSearch.__init__(self)
 
         if only_rna:
             molecule_type = 'RNA'
@@ -520,4 +528,4 @@ class UniqueChains(PDBeSolrSearch):
                                     ])
         for i in range(len(documents)):
             chain_id = documents[i]['chain_id']
-            self.results.append(sorted(chain_id)[0])
+            self.results.append(str(sorted(chain_id)[0]))

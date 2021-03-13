@@ -1,5 +1,5 @@
 import tarfile
-import _pickle
+import pickle as _pickle
 from os import path, makedirs, listdir
 
 '''Utility methods used by other classes
