@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import urllib2 as urllib
+from urllib import urlretrieve
 from os import path
 from re import compile
 from spyprot import Command
@@ -39,8 +40,7 @@ def getCath(pdbcode, chain):
        results: list of CATH annotations
        '''
     if not path.isfile(hcath):
-        with open(hcath_tmp, 'wb') as f:
-            f.write(urllib.urlopen(cath_uri).read())
+        urlretrieve(cath_uri, hcath_tmp)
         cmd = Command('egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" ' + hcath_tmp + '>' + hcath)
         cmd.run(5000)
         os.remove(hcath_tmp)
