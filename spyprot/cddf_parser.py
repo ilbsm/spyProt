@@ -42,7 +42,7 @@ def getCath(pdbcode, chain):
         with open(hcath_tmp, 'wb') as f:
             f.write(urllib.urlopen(cath_uri).read())
         cmd = Command('egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" ' + hcath_tmp + '>' + hcath)
-        cmd.run(1000)
+        cmd.run(5000)
         os.remove(hcath_tmp)
     pdbcode = pdbcode.lower()
     chain = chain
