@@ -39,7 +39,8 @@ def getCath(pdbcode, chain):
        results: list of CATH annotations
        '''
     if not path.isfile(hcath):
-        urllib.urlretrieve(cath_uri, hcath_tmp)
+        with open(hcath_tmp, 'wb') as f:
+            f.write(urllib.urlopen(cath_uri).read())
         cmd = Command('egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" ' + hcath_tmp + '>' + hcath)
         cmd.run(1000)
         os.remove(hcath_tmp)

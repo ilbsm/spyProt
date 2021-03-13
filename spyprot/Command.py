@@ -49,7 +49,7 @@ class Command(object):
                     self.process = subprocess.Popen(self.cmd, shell=True, stdout=logfile_handle, stderr=logerrfile_handle)
                 else:
                     self.process = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                self.o, self.e = self.process.communicate(timeout=timeout)
+                self.o, self.e = self.process.communicate()
                 if logfile:
                     logfile_handle.flush()
                     logfile_handle.close()
