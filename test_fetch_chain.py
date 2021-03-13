@@ -21,7 +21,6 @@ def test_fetchChainInfo_UniqueChains_2():
 
 def test_fetchChainInfo_UniqueChains_3():
     f = UniqueChains('6zj3', only_rna=True)
-    print(f.get())
     assert str(f.get()) == "['S1', 'S2', 'S3', 'S4', 'S5', 'LA', 'LB', 'LC', 'LD', 'LE', 'LF', 'LG', 'LH', 'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO']"
     f = UniqueChains('6zj3', only_prot=True)
     assert len(f.get()) == 78
@@ -67,13 +66,3 @@ def test_fetchChainInfo_ReleasedProteins_2():
     assert str(res) == "[('6hpj', 'A'), ('6vem', 'A'), ('6wbr', 'B'), ('6wc0', 'B'), ('6wvj', 'R')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
     assert len(res) == 495
-
-
-#from_date = datetime(2020, 11, 10).date()
-#to_date = datetime(2020, 11, 18).date()
-#res = ReleasedPDBs(from_date, to_date).get()
-#print(res)
-
-#test_fetchChainInfo_IdenticalChains()
-test_fetchChainInfo_UniqueChains_3()
-#test_fetchChainInfo_ReleasedProteins_2()
