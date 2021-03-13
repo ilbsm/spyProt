@@ -23,7 +23,9 @@ from sys import argv
 from datetime import datetime
 import os
 import re
-#from prettytable import PrettyTable
+
+
+# from prettytable import PrettyTable
 
 ###########################################################################################
 #                                                                                         #
@@ -63,17 +65,20 @@ def accessPDB(protID, downloadFasta=True, fastaTimestamp=True):
         # Actually both are stored in one file
         # Ask Lina what to do about it
         try:
-            wget.download("https://www.rcsb.org/pdb/download/viewFastaFiles.do?structureIdList=" + protID + "&compressionType=uncompressed", "results/fasta/" + protID + "_" + fastaStamp + ".fasta")
+            wget.download(
+                "https://www.rcsb.org/pdb/download/viewFastaFiles.do?structureIdList=" + protID + "&compressionType=uncompressed",
+                "results/fasta/" + protID + "_" + fastaStamp + ".fasta")
             print("\nPDB | The fasta file succesfully downloaded for ID:", protID)
         except:
             print("PDB | Couldn't download the fasta file for ID:", protID)
-    
+
     # Processing header to extract the remaining data
     with open(".temps/" + protID + "_" + tempStamp + ".txt") as temp:
         # All data to a list of lines
         data = temp.readlines()
 
-    srcOrganism = list((line.split("ORGANISM_SCIENTIFIC:")[1].strip()[:-1] for line in data if "ORGANISM_SCIENTIFIC:" in line))
+    srcOrganism = list(
+        (line.split("ORGANISM_SCIENTIFIC:")[1].strip()[:-1] for line in data if "ORGANISM_SCIENTIFIC:" in line))
     protFunction = list((line.split("COMPND")[1].strip() for line in data if "COMPND" in line))
 
     # Clean up the temporary file
@@ -81,62 +86,68 @@ def accessPDB(protID, downloadFasta=True, fastaTimestamp=True):
 
     return (protID, srcOrganism, protFunction, fastaStamp)
 
+
 # At the moment it returns a boolean: knotted (in the db) or unknotted (not present in the db)
 # WARNING: At the moment it checks only for chain A of the protein.
 def accessKnotProt(protID):
+    tempStamp = datetime.now().isoformat()
+    try:
+        # Temporary file in the making
+        wget.download("http://knotprot.cent.uw.edu.pl/browse/?pdbid=" + protID,
+                      ".temps/" + protID + "_" + tempStamp + ".txt")
+        print("\nKnotProt | Database succesfully accessed at ID:", protID)
+    except:
+        print("KnotProt | Can't access the database at ID:", protID)
+        return None
+
+    # Processing the file
+    with open(".temps/" + protID + "_" + tempStamp + ".txt") as temp:
+        # All data to a list of lines
+        data = temp.read()
+
+    # Check the topmost box to see whether knotted or unknotted
+    resultBox = data.split('<div class="alert alert-info alert-dismissable">')[1].split("</div>")[0].replace("/",
+                                                                                                             "").split(
+        "<strong>")
+
+    # Clean up the temporary file
+    os.remove(".temps/" + protID + "_" + tempStamp + ".txt")
+
+    if "Knotted" in resultBox:
+
         tempStamp = datetime.now().isoformat()
         try:
             # Temporary file in the making
-            wget.download("http://knotprot.cent.uw.edu.pl/browse/?pdbid=" + protID, ".temps/" + protID + "_" + tempStamp + ".txt")
-            print("\nKnotProt | Database succesfully accessed at ID:", protID)
+            wget.download("http://knotprot.cent.uw.edu.pl/view/" + protID + "/A/",
+                          ".temps/" + protID + "_" + tempStamp + ".txt")
+            print("\nKnotProt | View succesfully accessed at ID:", protID)
         except:
-            print("KnotProt | Can't access the database at ID:", protID)
+            print("KnotProt | Can't access the view at ID:", protID)
             return None
-        
+
         # Processing the file
         with open(".temps/" + protID + "_" + tempStamp + ".txt") as temp:
             # All data to a list of lines
-            data = temp.read()
+            typeData = temp.read()
 
-        # Check the topmost box to see whether knotted or unknotted
-        resultBox = data.split('<div class="alert alert-info alert-dismissable">')[1].split("</div>")[0].replace("/", "").split("<strong>")
+        # Check the tag span to check if it's slipknot or knot
+        typeData = typeData.split('<span class="label label-primary">')[1].split("</span>")[0]
+        # If knotType == True, it's a Slipknot. Else: it's a Knot.
+        knotType = ["Knot", "Slipknot"]["Slipknot" in typeData]
 
         # Clean up the temporary file
         os.remove(".temps/" + protID + "_" + tempStamp + ".txt")
 
-        if "Knotted" in resultBox:
+        print("The protein at PDB ID:", protID, "is knotted. It contains a", knotType)
+        return knotType
 
-            tempStamp = datetime.now().isoformat()
-            try:
-                # Temporary file in the making
-                wget.download("http://knotprot.cent.uw.edu.pl/view/" + protID + "/A/", ".temps/" + protID + "_" + tempStamp + ".txt")
-                print("\nKnotProt | View succesfully accessed at ID:", protID)
-            except:
-                print("KnotProt | Can't access the view at ID:", protID)
-                return None
-            
-            # Processing the file
-            with open(".temps/" + protID + "_" + tempStamp + ".txt") as temp:
-                # All data to a list of lines
-                typeData = temp.read()
+    elif "Unknotted" in resultBox:
+        print("The protein at PDB ID:", protID, "is unknotted.")
+        return 0
+    else:
+        print("KnotProt | Error: Can't process the result box for ID:", protID)
+        return None
 
-            # Check the tag span to check if it's slipknot or knot
-            typeData = typeData.split('<span class="label label-primary">')[1].split("</span>")[0]
-            # If knotType == True, it's a Slipknot. Else: it's a Knot.
-            knotType = ["Knot", "Slipknot"]["Slipknot" in typeData]
-
-            # Clean up the temporary file
-            os.remove(".temps/" + protID + "_" + tempStamp + ".txt")
-
-            print("The protein at PDB ID:", protID, "is knotted. It contains a", knotType)
-            return knotType
-
-        elif "Unknotted" in resultBox:
-            print("The protein at PDB ID:", protID, "is unknotted.")
-            return 0
-        else:
-            print("KnotProt | Error: Can't process the result box for ID:", protID)
-            return None
 
 # Takes info for chain A only, and from the PDB part of the PFAM table
 # Rewrite to include other chains and then return them to the accessKnotProt function
@@ -145,58 +156,66 @@ def accessPFAM(protID):
     tempStamp = datetime.now().isoformat()
     try:
         # Temporary file in the making
-        wget.download("https://pfam.xfam.org/structure/" + protID + "#tabview=tab3", ".temps/" + protID + "_" + tempStamp + ".txt")
+        wget.download("https://pfam.xfam.org/structure/" + protID + "#tabview=tab3",
+                      ".temps/" + protID + "_" + tempStamp + ".txt")
         print("\nPFAM | Database succesfully accessed at ID:", protID)
     except:
         print("PFAM | Can't access the database at ID:", protID)
         return None
-        
+
     with open(".temps/" + protID + "_" + tempStamp + ".txt", 'r') as temp:
         data = temp.read()
-    
+
     # Clean up the temporary file
     os.remove(".temps/" + protID + "_" + tempStamp + ".txt")
 
     # Now let's do a simple string split to get the first <tr> of the tbody of the table out of the code.
     # (Only the first row because we're interested in chain A only)
-    trOne = "".join(data.split('<table id="structuresTable"')[1].split("</table>")[0].split("<tbody>")[1].split("</tr>")[0].split()[2:])
+    trOne = "".join(
+        data.split('<table id="structuresTable"')[1].split("</table>")[0].split("<tbody>")[1].split("</tr>")[0].split()[
+        2:])
 
     # Then a regex pattern for splitting to get the individual rows of the table
     rows = re.compile(r'<\/?td*>')
     ## Again, the first element will be the name of the chain so we can skip it as it is always A
     table = [x for x in rows.split(trOne) if x != ""][1:]
-    
+
     # All the relevant information extracted and final values assigned to variables.
     ## The PDB prefix is here in case of potential extension to include seqs starts and ends from UniProt.
-    PDBseqStart, PDBseqEnd, famID, famName = table[0], table[1], table[-1].split("family/")[1].split('"')[0], table[-1].split(">")[1].split("<")[0]
-    
+    PDBseqStart, PDBseqEnd, famID, famName = table[0], table[1], table[-1].split("family/")[1].split('"')[0], \
+                                             table[-1].split(">")[1].split("<")[0]
+
     # Now we can get the clan info for the family, if it exists
     tempStamp = datetime.now().isoformat()
     try:
         # Temporary file in the making
-        wget.download("https://pfam.xfam.org/family/" + famID + "#tabview=tab2", ".temps/" + famID + "_" + tempStamp + ".txt")
+        wget.download("https://pfam.xfam.org/family/" + famID + "#tabview=tab2",
+                      ".temps/" + famID + "_" + tempStamp + ".txt")
         print("\nPFAM | Database succesfully accessed at Family ID:", famID)
     except:
         print("PFAM | Can't access the clan database at Family ID:", famID)
         return None
-        
+
     with open(".temps/" + famID + "_" + tempStamp + ".txt", 'r') as temp:
         clanData = temp.read()
-    
+
     # Clean up the temporary file
     os.remove(".temps/" + famID + "_" + tempStamp + ".txt")
-    
+
     try:
         # Take first <p> of the blockContent div of the clanBlock div
-        clanData = clanData.split('<div class="block" id="clanBlock">')[1].split('<div class="blockContent">')[1].split("<p>")[1].split("</p>")[0]
+        clanData = \
+        clanData.split('<div class="block" id="clanBlock">')[1].split('<div class="blockContent">')[1].split("<p>")[
+            1].split("</p>")[0]
 
-        #Simple split to get the name and CL ID from between the <a> handles
+        # Simple split to get the name and CL ID from between the <a> handles
         clanID = "CL" + clanData.split("/clan/CL")[1].split('"')[0]
     except:
         print("PFAM | No clan information found for protein family", famID)
         clanID = None
 
     return (clanID, famID, famName, PDBseqStart, PDBseqEnd)
+
 
 #########################################################################################################
 # SOLVED – THIS IS AN UNNECESSARY FUNCTION AT THE MOMENT. (after you change the display function)       #
@@ -218,6 +237,8 @@ def mapToPFAM(protID):
         familyInfo = "No record"
 
     return (header, familyInfo)
+
+
 #########################################################################################################
 #########################################################################################################
 
@@ -232,11 +253,12 @@ def combineResults(fromPDB, fromKP, fromPFAM):
         with open("results/result_" + fromPDB[0] + ".txt", 'w') as overallOutput:
 
             # New line in the result file
-            def newLine(): overallOutput.write("\n")
+            def newLine():
+                overallOutput.write("\n")
 
             overallOutput.write("PDB ID of the protein: " + fromPDB[0])
             overallOutput.write("\n--------------------------------------\n\n")
-            
+
             overallOutput.write("[PDB DATA]")
             newLine()
             overallOutput.write("The protein comes from: " + ", ".join(fromPDB[1]))
@@ -259,13 +281,14 @@ def combineResults(fromPDB, fromKP, fromPFAM):
                 with open("results/fasta/" + fromPDB[0] + "_" + fromPDB[3] + ".fasta", 'r') as fl:
                     fasta = fl.read()
 
-                overallOutput.write("[FASTA Sequence from PDB] (results/fasta/" + fromPDB[0] + "_" + fromPDB[3] + ".fasta)")
+                overallOutput.write(
+                    "[FASTA Sequence from PDB] (results/fasta/" + fromPDB[0] + "_" + fromPDB[3] + ".fasta)")
                 newLine()
                 overallOutput.write(fasta)
                 overallOutput.write("\n--------------------------------------\n\n")
             except:
                 print("Trouble finding the fasta file when printing the results. Perhaps nothing was found.")
-        
+
         print("Result file generated properly. Check the results folder.")
         return "results/result_" + fromPDB[0] + ".txt"
 
@@ -273,8 +296,9 @@ def combineResults(fromPDB, fromKP, fromPFAM):
         print("No protein ID returned by the accessPDB function.")
         return False
 
+
 def display(filename):
-    #display the results file
+    # display the results file
     try:
         # For MacOS
         os.system("open " + filename)
@@ -285,9 +309,11 @@ def display(filename):
         except:
             print("Something went wrong displaying the file.")
 
+
 # Function to clean up older fasta files for one protein
 def cleanFastas():
     pass
+
 
 # Safety measure
 def cleanTemps():
@@ -295,14 +321,15 @@ def cleanTemps():
     for temp in [f for f in os.listdir(".temps")]:
         os.remove(".temps/" + temp)
 
+
 if __name__ == "__main__":
     # Creating necessary folders
     if not os.path.exists(".temps"):
         os.makedirs(".temps")
-    
+
     if not os.path.exists("../results"):
         os.makedirs("results")
-    
+
     if not os.path.exists("../results/fasta"):
         os.makedirs("results/fasta")
 
@@ -313,6 +340,6 @@ if __name__ == "__main__":
     #    results = [accessPDB(proteinID), accessKnotProt(proteinID), accessPFAM(proteinID)]
     #    #display(combineResults(*results))
     #    print(results)
-    
+
     # Extra clean-up
     cleanTemps()

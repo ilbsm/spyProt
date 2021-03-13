@@ -46,7 +46,7 @@ def bz2Folder(folder, compressed_file, logger=None):
 def arraytostring(ar):
     i = []
     for e in ar:
-        i.append("%d-%d"%(e))
+        i.append("%d-%d" % (e))
     return ", ".join(i)
 
 
