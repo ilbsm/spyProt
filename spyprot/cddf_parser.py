@@ -40,6 +40,8 @@ def getCath(pdbcode, chain):
        results: list of CATH annotations
        '''
     if not path.isfile(hcath):
+        if not path.exists(DEFAULT_DATA_FILE_PATH):
+            os.makedirs(DEFAULT_DATA_FILE_PATH)
         urllib.request.urlretrieve(cath_uri, hcath_tmp)
         cmd = Command('egrep -v "^NAME|^DLEN|^S|^VER|^NSE|^FOR|^DSEQ" ' + hcath_tmp + '>' + hcath)
         cmd.run(1000)
