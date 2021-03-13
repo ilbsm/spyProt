@@ -1,7 +1,7 @@
 # source   jcollado http://stackoverflow.com/questions/1191374/subprocess-with-timeout?rq=1
 from os import SEEK_END
 import io
-import subprocess
+import subprocess32
 from subprocess32 import TimeoutExpired
 import threading
 # source https://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
@@ -47,12 +47,12 @@ class Command(object):
                     logfile_handle = open(logfile, 'w+')
                     self.logerrfile = logfile + ".err"
                     logerrfile_handle = open(self.logerrfile, 'w+')
-                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=logfile_handle,
+                    self.process = subprocess32.Popen(self.cmd, shell=True, stdout=logfile_handle,
                                                     stderr=logerrfile_handle)
                 else:
-                    self.process = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
-                                                    stderr=subprocess.PIPE)
-                self.o, self.e = self.process.communicate()
+                    self.process = subprocess32.Popen(self.cmd, shell=True, stdout=subprocess32.PIPE,
+                                                    stderr=subprocess32.PIPE)
+                self.o, self.e = self.process.communicate(timeout=timeout)
                 if logfile:
                     logfile_handle.flush()
                     logfile_handle.close()
