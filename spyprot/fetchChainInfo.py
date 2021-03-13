@@ -490,6 +490,7 @@ class ReleasedPDBs(PDBeSolrSearch):
             else:
                 if pid not in self.results:
                     self.results.append(pid)
+        self.results = sorted(self.results)
 
 
 class UniqueChains(PDBeSolrSearch):
