@@ -143,6 +143,15 @@ class getCoordinates(XmlPdbParser):
 class fetchPDBinfo(XmlPdbParser):
     def __init__(self, pdbcode, chain='A', work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
         super().__init__(pdbcode, chain, work_dir, localfile, atom=atom)
+        l = self.root.xpath(
+            "//PDBx:atom_siteCategory/PDBx:atom_site[PDBx:auth_atom_id=\"" + atom + "\"][PDBx:pdbx_PDB_model_num='1'][PDBx:group_PDB='ATOM']/PDBx:auth_asym_id",
+            namespaces=self.NS)
+        self.chains = set()
+        self.ordered_chains = []
+        for e in l:
+            if e is not None and e.text not in self.ordered_chains:
+                self.chains.update(e.text)
+                self.ordered_chains.append(e.text)
         self.codification = {"ALA": 'A',
                              "CYS": 'C',
                              "ASP": 'D',
@@ -347,6 +356,11 @@ class fetchPDBinfo(XmlPdbParser):
 
     def getMissing(self):
         return self.missing
+
+    def getChains(self):
+        return self.chains
+    def getOrderedChains(self):
+        return self.ordered_chains
 
     def getPubtitlePubmed(self):
         pubmed = self.root.xpath("//PDBx:citationCategory/PDBx:citation[1]/PDBx:pdbx_database_id_PubMed",
