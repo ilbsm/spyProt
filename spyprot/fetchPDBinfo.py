@@ -26,7 +26,7 @@ class XmlPdbParser:
     def download_if_not_exist(self):
         pdb_xml_file = path.join(self.work_dir, self.pdb + '.xml.gz')
         if not path.isfile(pdb_xml_file):
-            f = urllib.urlopen('https://www.rcsb.org/pdb/files/' + self.pdb + '.xml.gz')
+            f = urllib.urlopen('http://www.rcsb.org/pdb/files/' + self.pdb + '.xml.gz')
             fw = open(pdb_xml_file, "wb")
             fw.write(f.read())
             fw.close()
@@ -141,6 +141,16 @@ class getCoordinates(XmlPdbParser):
 class fetchPDBinfo(XmlPdbParser):
     def __init__(self, pdbcode, chain='A', work_dir=tempfile.gettempdir(), localfile=False, atom="CA"):
         XmlPdbParser.__init__(self, pdbcode, chain, work_dir, localfile, atom=atom)
+        l = self.root.xpath(
+            "//PDBx:atom_siteCategory/PDBx:atom_site[PDBx:auth_atom_id=\"" + atom + "\"][PDBx:pdbx_PDB_model_num='1'][PDBx:group_PDB='ATOM']/PDBx:auth_asym_id",
+            namespaces=self.NS)
+        self.chains = set()
+        self.ordered_chains = []
+        for e in l:
+            if e is not None and e.text not in self.ordered_chains:
+                self.chains.update(e.text)
+                self.ordered_chains.append(e.text)
+
         self.codification = {"ALA": 'A',
                              "CYS": 'C',
                              "ASP": 'D',
@@ -215,6 +225,7 @@ class fetchPDBinfo(XmlPdbParser):
                              "TYS": 'Y',
                              "TYR": 'Y'}
         self._getCAmissing()
+
 
     def getCalfaBreaks(self, preserve_seqid=False):
         l = self.root.xpath(
@@ -346,6 +357,11 @@ class fetchPDBinfo(XmlPdbParser):
     def getMissing(self):
         return self.missing
 
+    def getChains(self):
+        return self.chains
+    def getOrderedChains(self):
+        return self.ordered_chains
+
     def getPubtitlePubmed(self):
         pubmed = self.root.xpath("//PDBx:citationCategory/PDBx:citation[1]/PDBx:pdbx_database_id_PubMed",
                                  namespaces=self.NS)
@@ -375,6 +391,13 @@ if __name__ == "__main__":
     # r = fetchPDBinfo('/tmp','1j85', 'A', localfile=False, atom="CA")
     print(r.getSeqLength())
     print(r.getCAlen())
+
+    #p = fetchPDBinfo('7KPM','tt','/tmp')
+    p = fetchPDBinfo('1J85', 'A', '/tmp', localfile=False, atom="CA")
+    r = p.getPdbCreationDate()
+    #print(p.getChains())
+    #print(p.getOrderedChains())
+    #print(r)
     # b = getCoordinates("/tmp", "1uak")
     # b.getCalfaPdbFormat("A", output=path.join("/tmp", "t.pdb"))
     # a = fetchPDBinfo("/tmp", "1uak","A")
