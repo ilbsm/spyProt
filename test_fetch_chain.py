@@ -11,7 +11,7 @@ def test_fetchChainInfo_IdenticalChains():
 
 def test_fetchChainInfo_UniqueChains():
     f = UniqueChains('6wm4')
-    assert str(f.get()) == "['R', 'O', 'H', 'K', 'S', 'T', 'A', 'D', 'X', 'G', 'N', 'U', 'V', '0', '1', 'Q', 'P']"
+    assert str(sorted(f.get())) == str(sorted(['R', 'O', 'H', 'K', 'S', 'T', 'A', 'D', 'X', 'G', 'N', 'U', 'V', '0', '1', 'Q', 'P']))
 
 
 def test_fetchChainInfo_UniqueChains_2():
@@ -21,8 +21,7 @@ def test_fetchChainInfo_UniqueChains_2():
 
 def test_fetchChainInfo_UniqueChains_3():
     f = UniqueChains('6zj3', only_rna=True)
-    assert str(
-        f.get()) == "['S1', 'S2', 'S3', 'S4', 'S5', 'LA', 'LB', 'LC', 'LD', 'LE', 'LF', 'LG', 'LH', 'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO']"
+    assert str(sorted(f.get())) == str(sorted(['S1', 'S2', 'S3', 'S4', 'S5', 'LA', 'LB', 'LC', 'LD', 'LE', 'LF', 'LG', 'LH', 'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO']))
     f = UniqueChains('6zj3', only_prot=True)
     assert len(f.get()) == 78
     f = UniqueChains('6zj3', only_prot=False, only_rna=False)
