@@ -357,6 +357,10 @@ class fetchPDBinfo(XmlPdbParser):
     def getMissing(self):
         return self.missing
 
+    def setChain(self, chain):
+        self.chain = chain
+        self._getCAmissing()
+
     def getChains(self):
         return self.chains
     def getOrderedChains(self):
