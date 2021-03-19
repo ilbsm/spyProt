@@ -116,7 +116,7 @@ class PdbFile(ProteinFile):
        ==========
        path: string - where to store PDB file
        code: string - PDB ID
-       chain: string
+       chain: string - if empty return full PDB file or list of translated PDB files in case of PDB Bundles
 
     '''
 
@@ -134,28 +134,38 @@ class PdbFile(ProteinFile):
             if self.chain is not None:
                 self.filter_by_chain()
         except urllib.error.HTTPError as e:
-            print(self.pdbcode + " " + self.chain + " ...trying to download from PDB Bundle")
+            print(self.pdbcode + " " + str(self.chain) + " ...trying to download from PDB Bundle")
             response = urllib.request.urlopen(
                 'https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[
                                                                           1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
             tar = tarfile.open(fileobj=response, mode="r|gz")
             tar.extractall(self.dir)
             tar.close()
-            mapFile, mapChain = self.parsePdbBundleChainIdFile(
+            mapFile, mapChain, mapFileChain = self.parsePdbBundleChainIdFile(
                 self.dir + '/' + self.pdbcode.lower() + '-chain-id-mapping.txt')
-            newChain = mapChain.get(self.chain)
-            pdbBundleFile = self.dir + '/' + mapFile.get(self.chain)
-            if newChain != self.chain:
-                self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
+            # chain is set
+            if self.chain:
+                newChain = mapChain.get(self.chain)
+                pdbBundleFile = self.dir + '/' + mapFile.get(self.chain)
+                if newChain != self.chain:
+                    self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
+                else:
+                    shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
+                    self.filter_by_chain()
+                fileList = glob.glob(os.path.join(self.dir, self.pdbcode + "*bundle*.pdb"))
+                for filePath in fileList:
+                    try:
+                        os.remove(filePath)
+                    except OSError:
+                        print("Error while deleting file")
             else:
-                shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
-                self.filter_by_chain()
-            fileList = glob.glob(os.path.join(self.dir, self.pdbcode + "*bundle*.pdb"))
-            for filePath in fileList:
-                try:
-                    os.remove(filePath)
-                except OSError:
-                    print("Error while deleting file")
+                self.out_files = []
+                file_num = 1
+                for file in sorted(mapFileChain.keys()):
+                    mapChainFiltered = {key: mapChain[key] for key in mapFileChain.get(file)}
+                    self.parsePdbAndTranslateAllChains(self.dir + '/' + file, mapChainFiltered, file_num)
+                    file_num = file_num + 1
+                self.out_file = self.out_files
         if self.atom:
             self.filter_by_atom()
         return self.out_file
@@ -167,6 +177,7 @@ class PdbFile(ProteinFile):
             cnt = 1
             files = []
             mapChain = {}
+            mapFileChain = {}
             mapFile = {}
             actualFile = ''
             while line:
@@ -183,8 +194,11 @@ class PdbFile(ProteinFile):
                     val = mapping[0].strip()
                     mapChain[key] = val
                     mapFile[key] = actualFile
+                    if not actualFile in mapFileChain.keys():
+                        mapFileChain[actualFile] = []
+                    mapFileChain[actualFile].append(key)
                 line = fp.readline()
-            return mapFile, mapChain
+            return mapFile, mapChain, mapFileChain
 
     # Remapping chain for PDB bundles with many subchains
     def parsePdbAndTranslateChain(self, pdbFileIn, chain, newChain):
@@ -205,6 +219,32 @@ class PdbFile(ProteinFile):
                         else:
                             newLine[21] = chain
                         outfile.write("".join(newLine) + "\n")
+                else:
+                    outfile.write(line[0] + "\n")
+
+        # Remapping chain for PDB bundles with many subchains
+
+    def parsePdbAndTranslateAllChains(self, pdbFileIn, mapChainFiltered, file_num):
+        # print chain + '->' + newChain
+        outf = self.out_file.replace(".pdb", "_bundle_" + str(file_num) + ".pdb")
+        self.out_files.append(outf)
+        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(outf, "w", encoding='utf-8') as outfile:
+            reader = csv.reader(infile)
+            for i, line in enumerate(reader):
+                if line[0].find('ATOM') == 0 or line[0].find('HETATM') == 0:
+                    newLine = list(line[0])
+                    for chain in mapChainFiltered.keys():
+                        newChain = mapChainFiltered.get(chain)
+                        if newLine[21] == newChain:
+                            if len(chain) > 2:
+                                newLine += chain
+                                newLine[21] = "%"
+                            elif len(chain) > 1:
+                                newLine[20] = chain[0]
+                                newLine[21] = chain[1]
+                            else:
+                                newLine[21] = chain
+                            outfile.write("".join(newLine) + "\n")
                 else:
                     outfile.write(line[0] + "\n")
 
