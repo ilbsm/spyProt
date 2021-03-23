@@ -30,9 +30,14 @@ def test_download_pdb_files():
     PdbFile(dir, "6az3", "2", 'C3\'').download()
 
 
-test_download_pdb_files()
+#test_download_pdb_files()
 dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
 outf = PdbFile(dir, "4v7m").download()
 print(outf)
 
 PdbFile(dir, "6az3", "2", 'C3\'').download()
+
+
+dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
+#p = PdbFile(dir, "7bl1", "AAA").download()
+p = PdbFile(dir, "7bl1").download()
