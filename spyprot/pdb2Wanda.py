@@ -355,9 +355,14 @@ class Chain:
 
 ################################ Main part ################################
 ### search for chains and build chain classes
-def run_pdb2Wanda(inputdata, work_dir, filename):
+def run_pdb2Wanda(infile, work_dir, filename):
+    with open(infile, 'r') as f:
+        lines = []
+        for line in f.readlines():
+            lines.append(line.strip('\n'))
+
     chains=[]
-    for line in inputdata:
+    for line in lines:
         if(line[0:6]=="SEQRES"):
             if (line[11] not in chains):
                 chains.append(line[11])
@@ -373,7 +378,7 @@ def run_pdb2Wanda(inputdata, work_dir, filename):
     chain_data={}
     for k in range(len(chains)):
         chain_data[chains[k]]=Chain(chains[k])
-        for line in inputdata:
+        for line in lines:
             if ((line[0:10]=="REMARK 465") and (line[15:18] in amino_acids) and (line[19]==chains[k]) and isinstance(line[21:26],int)):
                 chain_data[chains[k]].add_missing(int(line[21:26]),line[15:18])
     #  if ((line[0:5]=="DBREF") and (line[26:32].strip()=="UNP") and (line[12]==chains[k])):	# gets the taxonomy, but slows down the program 
