@@ -1,4 +1,5 @@
-from spyprot.fetchChainInfo import PdbFile, MMCIFfile
+from spyprot import fetchPDBinfo
+from spyprot.fetchChainInfo import PdbFile, MMCIFfile, PdbMetaData
 import tempfile
 import os
 
@@ -31,13 +32,45 @@ def test_download_pdb_files():
 
 
 #test_download_pdb_files()
+# dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
+# outf = PdbFile(dir, "4v7m").download()
+# print(outf)
+#
+# PdbFile(dir, "6az3", "2", 'C3\'').download()
+#
+#
+# dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
+# #p = PdbFile(dir, "7bl1", "AAA").download()
+# p = PdbFile(dir, "7bl1").download()
 dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
-outf = PdbFile(dir, "4v7m").download()
-print(outf)
+pdb = '1j85'
 
-PdbFile(dir, "6az3", "2", 'C3\'').download()
+m = MMCIFfile(dir, pdb, 'A')
+m.download()
+print(m.get_xyz_list())
+print(m.get_breaks())
+
+print(m.get_seq_one_letter_code())
+print(m.get_meta_pubmed())
+
+#pdb = '6sj9'
+#m = MMCIFfile(dir, pdb, 'A')
+#m.download()
+#print(m.get_xyz_list())
+#print(m.get_breaks())
 
 
-dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
-#p = PdbFile(dir, "7bl1", "AAA").download()
-p = PdbFile(dir, "7bl1").download()
+
+z = fetchPDBinfo(pdbcode=pdb, work_dir=dir)
+print(z.getPubtitlePubmed())
+print(z.getSeqOneLetterCode())
+print(z.getPdbCreationDate())
+
+print(m.get_pdb_creation_date())
+
+print(z.getChains())
+z.setChain('A')
+print(z.getCalfaBreaks())
+
+pdbm = PdbMetaData(pdb)
+print(pdbm)

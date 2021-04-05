@@ -32,6 +32,10 @@ class ProteinFile:
         self.chain = chain
         self.dir = dir
         self.atom = atom
+        self.parser = None
+
+    def getParser(self):
+        return self.parser
 
 
 class ChainAndResidueSelect(Select):
@@ -122,6 +126,7 @@ class PdbFile(ProteinFile):
 
     def download(self):
         self.out_file = self.dir + '/' + self.pdbcode + '.pdb'
+        self.parser = PDBParser()
         try:
             makedirs(self.dir)
         except OSError as e:
@@ -270,6 +275,7 @@ class PdbFile(ProteinFile):
 class MMCIFfile(ProteinFile):
     def download_only(self):
         self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
+        self.parser = MMCIFParser()
         try:
             makedirs(self.dir)
         except OSError as e:
@@ -290,16 +296,14 @@ class MMCIFfile(ProteinFile):
         return self.out_file
 
     def filter_by_chain(self):
-        parser = MMCIFParser()
-        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
         io = MMCIFIO()
         io.set_structure(structure)
         self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
         io.save(self.out_file, ChainAndResidueSelect(self.chain))
 
     def filter_by_atom(self):
-        parser = MMCIFParser()
-        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
         io = MMCIFIO()
         io.set_structure(structure)
         self.out_file = self.out_file.replace(".cif", "_" + self.atom + ".cif")
@@ -307,8 +311,7 @@ class MMCIFfile(ProteinFile):
         del io
 
     def get_first_residue_id(self):
-        parser = MMCIFParser()
-        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
         for ch in structure.get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
@@ -316,8 +319,7 @@ class MMCIFfile(ProteinFile):
         return 0
 
     def get_residue_list(self):
-        parser = MMCIFParser()
-        structure = parser.get_structure(self.pdbcode, self.cif_file)
+        structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
         residues = {}
         for ch in structure.get_chains():
             if ch.get_id() == self.chain:
@@ -326,6 +328,69 @@ class MMCIFfile(ProteinFile):
                         residues[residue.get_id()] = residue.__dict__['resname']
         return residues
 
+    def get_xyz_list(self, xyz_atom='CA'):
+        structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
+        #self.xyz_dict = {}
+        self.xyz = []
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if xyz_atom in residue.child_dict:
+                        coords = [residue.child_dict[xyz_atom].coord[i] for i in range(len(residue.child_dict[xyz_atom].coord))]
+                        #self.xyz_dict[residue.get_id()] = coords
+                        self.xyz.append([residue.get_id()[1]] + coords)
+        return self.xyz
+
+    def get_breaks(self, xyz_atom='CA'):
+        if not self.xyz:
+            self.get_xyz_list(xyz_atom)
+        # check chain breaks
+        eps = 4.2 * 4.2
+        brk = []
+        o = self.xyz
+        for i in range(1, len(o)):
+            i1 = o[i - 1][0]
+            i2 = o[i][0]
+            x1 = o[i - 1][1]
+            y1 = o[i - 1][2]
+            z1 = o[i - 1][3]
+
+            x2 = o[i][1]
+            y2 = o[i][2]
+            z2 = o[i][3]
+
+            d = (x1 - x2) ** 2 + (y2 - y1) ** 2 + (z1 - z2) ** 2
+            if d > eps:
+                brk.append(i1)
+                brk.append(i2)
+        return brk
+
+    def get_pdb_creation_date(self):
+        return self.parser._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
+
+    def get_meta_pubmed(self):
+        pubmed_id = self.parser._mmcif_dict['_citation.pdbx_database_id_PubMed'][0]
+        doi = self.parser._mmcif_dict['_citation.pdbx_database_id_DOI'][0]
+        title = self.parser._mmcif_dict['_citation.title'][0]
+        desc = self.parser._mmcif_dict['_struct.title'][0]
+        src = self.parser._mmcif_dict['_entity_src_gen.pdbx_gene_src_scientific_name'][0]
+        key = self.parser._mmcif_dict['_struct_keywords.pdbx_keywords'][0]
+        molecutag = self.parser._mmcif_dict['_struct.pdbx_descriptor'][0]
+        return (doi, pubmed_id, desc, title, src, key, molecutag)
+
+#        structure.header['head']
+#        structure.header['deposition_date']
+#        structure.header['name']
+
+
+    def get_seq_one_letter_code(self):
+        #structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
+        model_id = -1
+        for model in self.getParser().get_structure(self.pdbcode, self.cif_file).child_list:
+            for ch in model.child_list:
+                if ch.id == self.chain:
+                    model_id = model.id
+        return self.parser._mmcif_dict['_entity_poly.pdbx_seq_one_letter_code'][model_id].replace('\n','')
 
 class SearchException(Exception):
     pass
@@ -573,3 +638,40 @@ class UniqueChains(PDBeSolrSearch):
         for i in range(len(documents)):
             chain_id = documents[i]['chain_id']
             self.results.append(sorted(chain_id)[0])
+
+
+class PdbMetaData(PDBeSolrSearch):
+    '''
+       Retrieve meta data for a given structure
+
+       example:
+       a = IdenticalChains("2jlo",chain="A").get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+    '''
+
+    def __init__(self, pdbcode):
+        super().__init__()
+
+        self.results = []
+        documents = self.exec_query("pdb_id,entity_id, chain_id, assembly_composition, deposition_date, number_of_protein_chains, "
+                                    "pubmed_id, citation_doi, citation_title, title, mutation, mutation_type, assembly_composition, enzyme_systematic_name, enzyme_name, molecule_sequence", [('pdb_id', pdbcode)])
+
+        for i in range(len(documents)):
+            chain_id = documents[i]['chain_id']
+            self.results = sorted(chain_id)
+            #break
+
+            # doi = doi[0].text if doi else None
+            # molecutag = molecutag[0].text if molecutag else None
+            # key = key[0].text.capitalize() if key else None
+            # src = src[0].text if src else None
+            # pubmed = pubmed[0].text if pubmed else None
+            # title = title[0].text if title else None
+            # desc = desc[0].text.capitalize() if desc else None
+            #
+            # return (doi, pubmed, desc, title, src, key, molecutag)
+
+
