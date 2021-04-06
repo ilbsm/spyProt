@@ -24,6 +24,8 @@ PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
 UNLIMITED_ROWS = 10000000
 DEBUG = False
 
+ALLOWED_HETATM = ['MSE', 'ORN', 'PCA', 'DGL']
+
 SEQ_CODE = { "ALA": 'A',
              "CYS": 'C',
              "ASP": 'D',
@@ -162,6 +164,9 @@ class ProteinFile:
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
+                        # Filter HETATM other than those in ALLOWED_HETATM
+                        if not residue.id[0].strip()=='' or (residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM):
+                            continue
                         seq_id = residue.get_id()[1]
                         if int(seq_id) == prev_seqid:
                             prev_seqid = int(seq_id)
@@ -278,7 +283,7 @@ class ProteinFile:
         for ch in structure.get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
-                    if (residue.id[0].strip()=='' and self.atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ['MSE', 'ORN', 'PCA', 'DGL']) and (residue.child_dict[atom].altloc.strip()=='' or residue.child_dict[atom].altloc.strip() == 'A'):
+                    if (residue.id[0].strip()=='' and self.atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM) and (residue.child_dict[self.atom].altloc.strip()=='' or residue.child_dict[self.atom].altloc.strip() == 'A'):
                         if self.atom =='CA':
                             if residue.resname in k:
                                 seq += SEQ_CODE[residue.resname]

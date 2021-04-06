@@ -33,7 +33,8 @@ def test_download_pdb_files():
 
 
 def test_cif_parser_vs_xml():
-    pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A']
+    pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
+                  '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
     from Bio import BiopythonWarning
@@ -43,18 +44,19 @@ def test_cif_parser_vs_xml():
         for el in pdb_chains:
             pdb = el.split('_')[0]
             chain = el.split('_')[1]
-            m = MMCIFfile(dir, pdb, chain)
+            atom = el.split('_')[2] if len(el.split('_'))>2 else 'CA'
+            m = MMCIFfile(dir, pdb, chain, atom=atom)
             m.download()
             m.get_pdb_data()
             m.save_xyz(dir + '/' + el + '_cif.xyz')
             m.save_pdb(dir + '/' + el + '_cif.pdb')
-            c = getCoordinates(pdbcode=pdb, work_dir=dir)
+            c = getCoordinates(pdbcode=pdb, work_dir=dir, atom=atom)
             c.getCalfa(chain=chain, output=dir + '/' + el + '_xml.xyz')
             c.getCalfaPdbFormat(chain=chain, output=dir + '/' + el + '_xml.pdb')
             assert filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False) == True
             assert filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False) == True
 
-            z = fetchPDBinfo(pdbcode=pdb, chain=chain, work_dir=dir)
+            z = fetchPDBinfo(pdbcode=pdb, chain=chain, atom=atom, work_dir=dir)
             ch_r = z.getOrderedChains()
             ch_l = m.get_chains()
             if ch_l!=ch_r:
@@ -68,8 +70,8 @@ def test_cif_parser_vs_xml():
             pm = m.get_meta_pubmed()
             zpm = z.getPubtitlePubmed()
             for i in range(len(zpm)):
-                l = str(zpm[i]).replace(' ','').lower()
-                r = str(pm[i]).replace(' ','').lower()
+                l = str(zpm[i]).replace(' ', '').lower()
+                r = str(pm[i]).replace(' ', '').lower()
                 if l!=r:
                     print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' +r)
                 assert l==r
@@ -119,7 +121,7 @@ def test_pdb_parser_vs_xml():
 #p.get_pdb_data()
 #test_download_pdb_files()
 #test_pdb_parser_vs_xml()
-#test_cif_parser_vs_xml()
+test_cif_parser_vs_xml()
 
 #test_download_pdb_files()
 # dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
