@@ -6,6 +6,7 @@ import tarfile
 import urllib.request, urllib.error, urllib.parse
 import datetime
 import json
+import warnings
 from os import makedirs, path
 from itertools import count, groupby
 
@@ -16,6 +17,8 @@ from mysolr import Solr
 import logging, sys
 
 from requests import HTTPError
+
+from spyprot.common import _gunzip
 
 PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
 UNLIMITED_ROWS = 10000000
@@ -95,9 +98,11 @@ SEQ_CODE = { "ALA": 'A',
              "TYS": 'Y',
              "TYR": 'Y'}
 
-def convertToRanges(L):
-    G = (list(x) for _, x in groupby(L, lambda x, c=count(): next(c) - x))
-    return ["-".join(map(str, (g[0], g[-1])[:len(g)])) for g in G]
+
+class SpyprotWarning(Warning):
+    """Spyprot warning."""
+    pass
+
 
 class ProteinFile:
     '''
@@ -105,16 +110,200 @@ class ProteinFile:
        Supports also PDB Bundles when there are many subchains for a given protein
     '''
 
-    def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None):
+    def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
         self.pdbcode = pdbcode
         self.chain = chain
         self.dir = dir
         self.atom = atom
         self.filter_by_atom = filter_by_atom
+        self.preserve_seqid = preserve_seqid
+        self.pdbdata = []
+        self.crystlen = -1
+        self.missing_array = []
+        self.missing = []
+        self.seq_idx = []
+        self.seq_len = -1
+        ###
         self.parser = None
+        self.data_file = None
+        self.io = None
+        self.ext = ''
+        try:
+            makedirs(self.dir)
+        except OSError as e:
+            pass
 
     def get_parser(self):
         return self.parser
+
+    @staticmethod
+    def _get_file(url, file):
+        if not path.isfile(file) or path.getsize(file) == 0:
+            response = urllib.request.urlopen(url)
+            if file.endswith('gz'):
+                with open(file, 'wb') as myfile:
+                    myfile.write(response.read())
+            else:
+                html = response.read().decode("UTF-8")
+                with open(file, 'w') as myfile:
+                    myfile.write(html)
+
+    def get_pdb_data(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        first_resid = -1
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if self.atom in residue.child_dict:
+                        first_resid = int(residue.get_id()[1])
+                        break
+        prev_seqid = first_resid - 9999999999999
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if self.atom in residue.child_dict:
+                        seq_id = residue.get_id()[1]
+                        if int(seq_id) == prev_seqid:
+                            prev_seqid = int(seq_id)
+                            print(prev_seqid)
+                            continue
+                        prev_seqid = int(seq_id)
+                        coords = [residue.child_dict[self.atom].coord[i] for i in
+                                  range(len(residue.child_dict[self.atom].coord))]
+                        line = [seq_id] + coords
+                        if None not in line:
+                            if self.preserve_seqid:
+                                new_seqid = int(line[0])
+                            else:
+                                new_seqid = int(line[0]) - first_resid + 1
+                        self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
+        self.crystlen = len(self.pdbdata)
+        seq = [x[0] for x in self.pdbdata]
+        self.missing = [x for x in range(seq[0], seq[-1] + 1) if x not in seq]
+        self.missing_array = self.missing
+        self.missing = ProteinFile.convertToRanges(self.missing)
+        self.seq_idx = seq
+        self.seq_len = seq[-1]
+        return self.pdbdata
+
+    def get_ca_len(self):
+        return self.crystlen
+
+    def get_seq_len(self):
+        return self.seq_len
+
+    def get_missing(self):
+        return self.missing
+
+    def get_missing_array(self):
+        return self.missing_array
+
+    def get_xyz_list(self):
+        if not self.pdbdata:
+            self.get_pdb_data()
+        return [el[:4] for el in self.pdbdata]
+
+    def save_xyz(self, output):
+        o = ''
+        for l in self.get_xyz_list():
+            o += "%4d %8.3f %8.3f %8.3f\n" % (l[0], float(l[1]), float(l[2]), float(l[3]))
+        if output != '':
+            with open(output, "w") as f:
+                f.write(o)
+
+    def save_pdb(self, output):
+        if not self.pdbdata:
+            self.get_pdb_data()
+        o = ''
+        for l in self.pdbdata:
+            line = (l[0], l[4], self.chain, l[0], float(l[1]), float(l[2]), float(l[3]), float(l[5]))
+            if self.atom == 'CA':
+                o += "ATOM%7d  CA%5s%2s%4d%12.3f%8.3f%8.3f  1.00%6.2f           C\n" % line
+            else:
+                o += "ATOM%7d  C3'%4s%2s%4d%12.3f%8.3f%8.3f  1.00%6.2f           C\n" % line
+        if output != '':
+            with open(output, "w") as f:
+                f.write(o)
+
+    def get_chains(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        return [ch.get_id() for ch in structure.get_chains()]
+
+    def get_breaks(self):
+        # check chain breaks
+        eps = 4.2 * 4.2
+        brk = []
+        o = self.get_xyz_list()
+        for i in range(1, len(o)):
+            i1 = o[i - 1][0]
+            i2 = o[i][0]
+            x1 = o[i - 1][1]
+            y1 = o[i - 1][2]
+            z1 = o[i - 1][3]
+
+            x2 = o[i][1]
+            y2 = o[i][2]
+            z2 = o[i][3]
+
+            d = (x1 - x2) ** 2 + (y2 - y1) ** 2 + (z1 - z2) ** 2
+            if d > eps:
+                brk.append(i1)
+                brk.append(i2)
+        return brk
+
+    def get_first_residue_id(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    return residue.get_id()[1]
+        return 0
+
+    def get_residue_list(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        residues = {}
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if residue.__dict__['resname'] != 'HOH':
+                        residues[residue.get_id()] = residue.__dict__['resname']
+        return residues
+
+    def get_seq_one_letter_code(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        seq = ''
+        k = list(SEQ_CODE.keys())
+        for ch in structure.get_chains():
+            if ch.get_id() == self.chain:
+                for residue in ch.get_residues():
+                    if (residue.id[0].strip()=='' and self.atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ['MSE', 'ORN', 'PCA', 'DGL']) and (residue.child_dict[atom].altloc.strip()=='' or residue.child_dict[atom].altloc.strip() == 'A'):
+                        if self.atom =='CA':
+                            if residue.resname in k:
+                                seq += SEQ_CODE[residue.resname]
+                            else:
+                                seq += "X"
+                        else:
+                            seq += residue.resname
+        return seq
+
+    def filter_by_chain(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        self.io.set_structure(structure)
+        self.out_file = self.data_file.replace(self.ext, "_" + self.chain + self.ext)
+        self.io.save(self.out_file, ChainAndResidueSelect(self.chain))
+        del self.io
+
+    def filter_by_atom(self):
+        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
+        self.io.set_structure(structure)
+        self.out_file = self.out_file.replace(self.ext, "_" + self.atom + self.ext)
+        self.io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
+        del self.io
+
+    @staticmethod
+    def convertToRanges(L):
+        G = (list(x) for _, x in groupby(L, lambda x, c=count(): next(c) - x))
+        return ["-".join(map(str, (g[0], g[-1])[:len(g)])) for g in G]
 
 
 class ChainAndResidueSelect(Select):
@@ -202,23 +391,23 @@ class PdbFile(ProteinFile):
        chain: string - if empty return full PDB file or list of translated PDB files in case of PDB Bundles
 
     '''
+    def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
+        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom, preserve_seqid=preserve_seqid)
+        self.data_file = path.join(self.dir, self.pdbcode + '.pdb')
+        self.parser = PDBParser()
+        self.io = PDBIO()
+        self.ext = '.pdb'
 
     def download(self):
-        self.out_file = self.dir + '/' + self.pdbcode + '.pdb'
-        self.parser = PDBParser()
         try:
-            makedirs(self.dir)
-        except OSError as e:
-            pass
-        try:
-            response = urllib.request.urlopen('https://files.rcsb.org/view/' + self.pdbcode.upper() + '.pdb')
-            html = response.read().decode("UTF-8")
-            with open(self.out_file, 'w') as myfile:
-                myfile.write(html)
+            ProteinFile._get_file('https://files.rcsb.org/view/' + self.pdbcode.upper() + '.pdb', self.data_file)
             if self.chain is not None:
                 self.filter_by_chain()
         except urllib.error.HTTPError as e:
-            print(self.pdbcode + " " + str(self.chain) + " ...trying to download from PDB Bundle")
+            warnings.warn(
+                "%s %s ..trying to download from PDB Bundle"
+                % (self.pdbcode, str(self.chain)), SpyprotWarning,
+            )
             response = urllib.request.urlopen(
                 'https://files.rcsb.org/pub/pdb/compatible/pdb_bundle/' + self.pdbcode.lower()[
                                                                           1:3] + '/' + self.pdbcode.lower() + '/' + self.pdbcode.lower() + '-pdb-bundle.tar.gz')
@@ -234,14 +423,14 @@ class PdbFile(ProteinFile):
                 if newChain != self.chain:
                     self.parsePdbAndTranslateChain(pdbBundleFile, self.chain, newChain)
                 else:
-                    shutil.move(self.dir + '/' + mapFile.get(self.chain), self.out_file)
+                    shutil.move(self.dir + '/' + mapFile.get(self.chain), self.data_file)
                     self.filter_by_chain()
                 fileList = glob.glob(os.path.join(self.dir, self.pdbcode + "*bundle*.pdb"))
                 for filePath in fileList:
                     try:
                         os.remove(filePath)
                     except OSError:
-                        print("Error while deleting file")
+                        warnings.warn("Error while deleting file", SpyprotWarning)
             else:
                 self.out_files = []
                 file_num = 1
@@ -249,10 +438,10 @@ class PdbFile(ProteinFile):
                     mapChainFiltered = {key: mapChain[key] for key in mapFileChain.get(file)}
                     self.parsePdbAndTranslateAllChains(self.dir + '/' + file, mapChainFiltered, file_num)
                     file_num = file_num + 1
-                self.out_file = self.out_files
+                self.data_file = self.out_files
         if self.filter_by_atom:
             self.filter_by_atom()
-        return self.out_file
+        return self.data_file
 
     @staticmethod
     def parsePdbBundleChainIdFile(chainFile):
@@ -287,8 +476,8 @@ class PdbFile(ProteinFile):
     # Remapping chain for PDB bundles with many subchains
     def parsePdbAndTranslateChain(self, pdbFileIn, chain, newChain):
         # print chain + '->' + newChain
-        self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
-        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(self.out_file, "w", encoding='utf-8') as outfile:
+        self.data_file = self.data_file.replace(".pdb", "_" + self.chain + ".pdb")
+        with open(pdbFileIn, "r", encoding='utf-8') as infile, open(self.data_file, "w", encoding='utf-8') as outfile:
             reader = csv.reader(infile)
             for i, line in enumerate(reader):
                 if line[0].find('ATOM') == 0 or line[0].find('HETATM') == 0:
@@ -310,7 +499,7 @@ class PdbFile(ProteinFile):
 
     def parsePdbAndTranslateAllChains(self, pdbFileIn, mapChainFiltered, file_num):
         # print chain + '->' + newChain
-        outf = self.out_file.replace(".pdb", "_bundle_" + str(file_num) + ".pdb")
+        outf = self.data_file.replace(".pdb", "_bundle_" + str(file_num) + ".pdb")
         self.out_files.append(outf)
         with open(pdbFileIn, "r", encoding='utf-8') as infile, open(outf, "w", encoding='utf-8') as outfile:
             reader = csv.reader(infile)
@@ -332,237 +521,58 @@ class PdbFile(ProteinFile):
                 else:
                     outfile.write(line[0] + "\n")
 
-    def filter_by_chain(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.out_file)
-        io = PDBIO()
-        io.set_structure(structure)
-        self.out_file = self.out_file.replace(".pdb", "_" + self.chain + ".pdb")
-        io.save(self.out_file, ChainAndResidueSelect(self.chain))
-        del io
-
-    def filter_by_atom(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.out_file)
-        io = PDBIO()
-        io.set_structure(structure)
-        self.out_file = self.out_file.replace(".pdb", "_" + self.atom + ".pdb")
-        io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
-        del io
-
 
 class MMCIFfile(ProteinFile):
-    def download_only(self):
-        self.cif_file = path.join(self.dir, self.pdbcode + ".cif")
+    def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
+        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom, preserve_seqid=preserve_seqid)
+        self.data_file = path.join(self.dir, self.pdbcode + ".cif")
         self.parser = MMCIFParser()
-        self.pdbdata = None
-        self.preserve_seqid = False
+        self.io = MMCIFIO()
+        self.ext = '.cif'
+
+    def download_only(self):
         try:
-            makedirs(self.dir)
-        except OSError as e:
-            pass
-        response = urllib.request.urlopen('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif')
-        html = response.read().decode("UTF-8")
-        with open(self.cif_file, 'w') as myfile:
-            myfile.write(html)
+            ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif.gz', self.data_file + '.gz')
+            _gunzip(self.data_file + '.gz')
+            os.remove(self.data_file + '.gz')
+        except Exception as e:
+            ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif', self.data_file)
 
     def download(self):
         self.download_only()
         if self.chain is not None:
             self.filter_by_chain()
         else:
-            self.out_file = self.cif_file
+            self.out_file = self.data_file
         if self.filter_by_atom:
             self.filter_by_atom()
         return self.out_file
 
-    def filter_by_chain(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        io = MMCIFIO()
-        io.set_structure(structure)
-        self.out_file = self.cif_file.replace(".cif", "_" + self.chain + ".cif")
-        io.save(self.out_file, ChainAndResidueSelect(self.chain))
-
-    def filter_by_atom(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        io = MMCIFIO()
-        io.set_structure(structure)
-        self.out_file = self.out_file.replace(".cif", "_" + self.atom + ".cif")
-        io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
-        del io
-
-    def get_first_residue_id(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        for ch in structure.get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    return residue.get_id()[1]
-        return 0
-
-    def get_residue_list(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        residues = {}
-        for ch in structure.get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if residue.__dict__['resname'] != 'HOH':
-                        residues[residue.get_id()] = residue.__dict__['resname']
-        return residues
-
-    def get_pdb_data(self, preserve_seqid=False):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-
-        self.preserve_seqid = preserve_seqid
-        self.pdbdata = []
-        seq = []
-        prev_seqid = 999999999999999
-        first_resid = -1
-        for ch in structure.get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if self.atom in residue.child_dict:
-                        first_resid = int(residue.get_id()[1])
-                        break
-        prev_seqid = first_resid - 9999999999999
-        for ch in structure.get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if self.atom in residue.child_dict:
-                        seq_id = residue.get_id()[1]
-                        #self.xyz_dict[residue.get_id()] = coords
-                        if int(seq_id) == prev_seqid:
-                            prev_seqid = int(seq_id)
-                            print(prev_seqid)
-                            continue
-                        prev_seqid = int(seq_id)
-                        coords = [residue.child_dict[self.atom].coord[i] for i in
-                                  range(len(residue.child_dict[self.atom].coord))]
-                        line = [seq_id] + coords
-                        #self.xyz.append(line)
-                        if None not in line:
-                            if preserve_seqid:
-                                new_seqid = int(line[0])
-                            else:
-                                new_seqid = int(line[0]) - first_resid + 1
-                        self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
-        self.crystlen = len(self.pdbdata)
-        seq = [x[0] for x in self.pdbdata]
-        self.missing = [x for x in range(seq[0], seq[-1] + 1) if x not in seq]
-        self.missing_array = self.missing
-        self.missing = convertToRanges(self.missing)
-        self.seq_idx = seq
-        self.seq_len = seq[-1]
-        return self.pdbdata
-
-    def get_ca_len(self):
-        return self.crystlen
-
-    def get_seq_len(self):
-        return self.seq_len
-
-    def get_missing(self):
-        return self.missing
-
-    def get_missing_array(self):
-        return self.missing_array
-
-    def get_xyz_list(self, preserve_seqid=False):
-        if not self.pdbdata or self.preserve_seqid != preserve_seqid:
-            self.get_pdb_data(preserve_seqid=preserve_seqid)
-        return [el[:4] for el in self.pdbdata]
-
-    def save_xyz(self, output):
-        o = ''
-        for l in self.get_xyz_list(self.preserve_seqid):
-            o += "%4d %8.3f %8.3f %8.3f\n" % (l[0], float(l[1]), float(l[2]), float(l[3]))
-        if output != '':
-            f = open(output, "w")
-            f.write(o)
-            f.close()
-
-    def save_pdb(self, output):
-        if not self.pdbdata :
-            self.get_pdb_data(preserve_seqid=self.preserve_seqid)
-        o = ''
-        for l in self.pdbdata:
-            line = (l[0], l[4], self.chain, l[0], float(l[1]), float(l[2]), float(l[3]), float(l[5]))
-            if self.atom == 'CA':
-                o += "ATOM%7d  CA%5s%2s%4d%12.3f%8.3f%8.3f  1.00%6.2f           C\n" % line
-            else:
-                o += "ATOM%7d  C3'%4s%2s%4d%12.3f%8.3f%8.3f  1.00%6.2f           C\n" % line
-        if output != '':
-            f = open(output, "w")
-            f.write(o)
-            f.close()
-
-    def get_chains(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        return [ch.get_id() for ch in structure.get_chains()]
-
-    def get_breaks(self):
-        # check chain breaks
-        eps = 4.2 * 4.2
-        brk = []
-        o = self.get_xyz_list(preserve_seqid=self.preserve_seqid)
-        for i in range(1, len(o)):
-            i1 = o[i - 1][0]
-            i2 = o[i][0]
-            x1 = o[i - 1][1]
-            y1 = o[i - 1][2]
-            z1 = o[i - 1][3]
-
-            x2 = o[i][1]
-            y2 = o[i][2]
-            z2 = o[i][3]
-
-            d = (x1 - x2) ** 2 + (y2 - y1) ** 2 + (z1 - z2) ** 2
-            if d > eps:
-                brk.append(i1)
-                brk.append(i2)
-        return brk
 
     def get_pdb_creation_date(self):
         return self.get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
 
     def get_meta_pubmed(self):
-        pubmed_id = self.get_parser()._mmcif_dict['_citation.pdbx_database_id_PubMed'][0]
-        doi = self.parser._mmcif_dict['_citation.pdbx_database_id_DOI'][0]
-        title = self.parser._mmcif_dict['_citation.title'][0]
-        desc = self.parser._mmcif_dict['_struct.title'][0]
-        src = self.parser._mmcif_dict['_entity_src_gen.pdbx_gene_src_scientific_name'][0]
-        key = self.parser._mmcif_dict['_struct_keywords.pdbx_keywords'][0]
-        molecutag = self.parser._mmcif_dict['_struct.pdbx_descriptor'][0]
+        pubmed_id = self.get_par_from_dict('_citation.pdbx_database_id_PubMed')
+        doi = self.get_par_from_dict('_citation.pdbx_database_id_DOI')
+        title = self.get_par_from_dict('_citation.title')
+        desc = self.get_par_from_dict('_struct.title')
+        src = self.get_par_from_dict('_entity_src_gen.pdbx_gene_src_scientific_name')
+        key = self.get_par_from_dict('_struct_keywords.pdbx_keywords')
+        molecutag = self.get_par_from_dict('_entity.pdbx_description')
         return (doi, pubmed_id, desc, title, src, key, molecutag)
 
-#        structure.header['head']
-#        structure.header['deposition_date']
-#        structure.header['name']
-
+    def get_par_from_dict(self, par):
+        return self.get_parser()._mmcif_dict[par][0] if par in self.get_parser()._mmcif_dict else None
 
     def get_seq_one_letter_code_can(self):
-        #structure = self.getParser().get_structure(self.pdbcode, self.cif_file)
         model_id = -1
-        for model in self.get_parser().get_structure(self.pdbcode, self.cif_file).child_list:
+        for model in self.get_parser().get_structure(self.pdbcode, self.data_file).child_list:
             for ch in model.child_list:
                 if ch.id == self.chain:
                     model_id = model.id
-        return self.parser._mmcif_dict['_entity_poly.pdbx_seq_one_letter_code'][model_id].replace('\n','')
+        return self.parser._mmcif_dict['_entity_poly.pdbx_seq_one_letter_code'][model_id].replace('\n', '')
 
-    def get_seq_one_letter_code(self, atom='CA'):
-        structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        residues = {}
-        seq = ''
-        k = list(SEQ_CODE.keys())
-        for ch in structure.get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if (residue.id[0].strip()=='' and atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ['MSE', 'ORN', 'PCA', 'DGL']) and (residue.child_dict[atom].altloc.strip()=='' or residue.child_dict[atom].altloc.strip()=='A'):
-                        if atom =='CA':
-                            if residue.resname in k:
-                                seq += SEQ_CODE[residue.resname]
-                            else:
-                                seq += "X"
-                        else:
-                            seq += residue.resname
-        return seq
 
 class SearchException(Exception):
     pass

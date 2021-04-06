@@ -1,5 +1,7 @@
 import tarfile
 import _pickle
+import gzip
+import shutil
 from os import path, makedirs, listdir
 
 '''Utility methods used by other classes
@@ -57,11 +59,13 @@ def gzipPDB(code, chain, path, suffix=''):
 
 # Gzip
 def _gzip(file):
-    import gzip
-    import shutil
     with open(file, 'rb') as f_in, gzip.open(file + '.gz', 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-    return
+
+# GUnzip
+def _gunzip(file):
+    with gzip.open(file, 'rb') as f_in, open(file.replace('.gz',''), 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
 
 
 def read_from_bin_file(filename):
