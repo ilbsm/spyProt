@@ -178,6 +178,8 @@ class ProteinFile:
                                 new_seqid = int(line[0]) - first_resid + 1
                         self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
         self.crystlen = len(self.pdbdata)
+        if self.crystlen==0:
+            return []
         seq = [x[0] for x in self.pdbdata]
         self.missing = [x for x in range(seq[0], seq[-1] + 1) if x not in seq]
         self.missing_array = self.missing
@@ -520,6 +522,9 @@ class PdbFile(ProteinFile):
                             outfile.write("".join(newLine) + "\n")
                 else:
                     outfile.write(line[0] + "\n")
+    # Unreliable
+    #def get_pdb_creation_date(self):
+    #    return self.get_parser().header['deposition_date']
 
 
 class MMCIFfile(ProteinFile):

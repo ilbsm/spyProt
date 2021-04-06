@@ -4,6 +4,7 @@ import tempfile
 import os
 import filecmp
 
+
 def test_download_pdb_files():
     dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
     os.makedirs(dir, exist_ok=True)
@@ -33,7 +34,7 @@ def test_download_pdb_files():
 
 def test_cif_parser_vs_xml():
     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A']
-    dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
+    dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
     from Bio import BiopythonWarning
     import warnings
@@ -43,7 +44,6 @@ def test_cif_parser_vs_xml():
             pdb = el.split('_')[0]
             chain = el.split('_')[1]
             m = MMCIFfile(dir, pdb, chain)
-            #m = PdbFile(dir, pdb, chain)
             m.download()
             m.get_pdb_data()
             m.save_xyz(dir + '/' + el + '_cif.xyz')
@@ -65,17 +65,49 @@ def test_cif_parser_vs_xml():
             assert z.getSeqOneLetterCode() == m.get_seq_one_letter_code()
             assert z.getSeqLength() == m.get_seq_len()
             assert z.getPdbCreationDate() == m.get_pdb_creation_date()
-            # pm = m.get_meta_pubmed()
-            # #print(pm)
-            # zpm = z.getPubtitlePubmed()
-            # #print(zpm)
-            # for i in range(len(zpm)):
-            #     l = str(zpm[i]).replace(' ','').lower()
-            #     r = str(pm[i]).replace(' ','').lower()
-            #     if l!=r:
-            #         print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' +r)
-            #     assert l==r
+            pm = m.get_meta_pubmed()
+            zpm = z.getPubtitlePubmed()
+            for i in range(len(zpm)):
+                l = str(zpm[i]).replace(' ','').lower()
+                r = str(pm[i]).replace(' ','').lower()
+                if l!=r:
+                    print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' +r)
+                assert l==r
 
+
+def test_pdb_parser_vs_xml():
+    # Will not work correctly for bundles
+    pdb_chains = ['6az3_B', '6az3_e', '1j85_A', '6ki1_A']
+    dir = os.path.join(tempfile.gettempdir(), 'test_pdb_xml')
+    os.makedirs(dir, exist_ok=True)
+    from Bio import BiopythonWarning
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', BiopythonWarning)
+        for el in pdb_chains:
+            pdb = el.split('_')[0]
+            chain = el.split('_')[1]
+            m = PdbFile(dir, pdb, chain)
+            m.download()
+            m.get_pdb_data()
+            m.save_xyz(dir + '/' + el + '_cif.xyz')
+            m.save_pdb(dir + '/' + el + '_cif.pdb')
+            c = getCoordinates(pdbcode=pdb, work_dir=dir)
+            c.getCalfa(chain=chain, output=dir + '/' + el + '_xml.xyz')
+            c.getCalfaPdbFormat(chain=chain, output=dir + '/' + el + '_xml.pdb')
+            assert filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False) == True
+            assert filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False) == True
+
+            z = fetchPDBinfo(pdbcode=pdb, chain=chain, work_dir=dir)
+            ch_r = z.getOrderedChains()
+            ch_l = m.get_chains()
+            if ch_l!=ch_r:
+                print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+            assert z.getMissingArray() == m.get_missing_array()
+            assert z.getMissing() == m.get_missing()
+            assert z.getCAlen() == m.get_ca_len()
+            assert z.getSeqOneLetterCode() == m.get_seq_one_letter_code()
+            assert z.getSeqLength() == m.get_seq_len()
 
 
 
@@ -83,8 +115,10 @@ def test_cif_parser_vs_xml():
 #PdbFile(dir, "4v7m", "B3").download()
 #p = PdbFile(dir, "1j85", "A")
 #p.download()
+#p.get_pdb_creation_date()
 #p.get_pdb_data()
 #test_download_pdb_files()
+#test_pdb_parser_vs_xml()
 #test_cif_parser_vs_xml()
 
 #test_download_pdb_files()
