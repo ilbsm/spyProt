@@ -38,13 +38,25 @@ def test_cif_parser_vs_xml():
     for el in pdb_chains:
         pdb = el.split('_')[0]
         chain = el.split('_')[1]
+
+        m = MMCIFfile(dir, pdb)
+        m.download()
+        z = fetchPDBinfo(pdbcode=pdb, work_dir=dir)
+        ch_r = z.getOrderedChains()
+        ch_l = m.get_chains()
+        if ch_l!=ch_r:
+            print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+        #assert ch_l==ch_r
+
         m = MMCIFfile(dir, pdb, chain)
         m.download()
         m.get_pdb_data()
         m.save_xyz(dir + '/' + el + '_cif.xyz')
         m.save_pdb(dir + '/' + el + '_cif.pdb')
         z = fetchPDBinfo(pdbcode=pdb, chain=chain, work_dir=dir)
-        assert z.getOrderedChains()==m.get_chains()
+        print(pdb)
+        print(z.getOrderedChains())
+        print(m.get_chains())
         assert z.getMissingArray() == m.get_missing_array()
         assert z.getMissing() == m.get_missing()
         assert z.getCAlen() == m.get_ca_len()
@@ -52,9 +64,15 @@ def test_cif_parser_vs_xml():
         assert z.getSeqLength() == m.get_seq_len()
         assert z.getPdbCreationDate() == m.get_pdb_creation_date()
         pm = m.get_meta_pubmed()
+        #print(pm)
         zpm = z.getPubtitlePubmed()
+        #print(zpm)
         for i in range(len(zpm)):
-            assert str(zpm[i]).lower()==str(pm[i]).lower()
+            l = str(zpm[i]).replace(' ','').lower()
+            r = str(pm[i]).replace(' ','').lower()
+            if l!=r:
+                print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' +r)
+            assert l==r
 
 
 

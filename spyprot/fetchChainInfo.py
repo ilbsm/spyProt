@@ -495,7 +495,7 @@ class MMCIFfile(ProteinFile):
 
     def get_chains(self):
         structure = self.get_parser().get_structure(self.pdbcode, self.cif_file)
-        return structure.get_chains()
+        return [ch.get_id() for ch in structure.get_chains()]
 
     def get_breaks(self):
         # check chain breaks
