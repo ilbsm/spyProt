@@ -127,6 +127,7 @@ class ProteinFile:
         self.seq_len = -1
         ###
         self.parser = None
+        self.structure = None
         self.data_file = None
         self.io = None
         self.ext = ''
@@ -135,7 +136,12 @@ class ProteinFile:
         except OSError as e:
             pass
 
-    def get_parser(self):
+    def _get_structure(self):
+        if not self.structure:
+            self.structure = self._get_parser().get_structure(self.pdbcode, self.data_file)
+        return self.structure
+
+    def _get_parser(self):
         return self.parser
 
     @staticmethod
@@ -151,16 +157,15 @@ class ProteinFile:
                     myfile.write(html)
 
     def get_pdb_data(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
         first_resid = -1
-        for ch in structure.get_chains():
+        for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
                         first_resid = int(residue.get_id()[1])
                         break
         prev_seqid = first_resid - 9999999999999
-        for ch in structure.get_chains():
+        for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
@@ -233,8 +238,7 @@ class ProteinFile:
                 f.write(o)
 
     def get_chains(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
-        return [ch.get_id() for ch in structure.get_chains()]
+        return [ch.get_id() for ch in self._get_structure().get_chains()]
 
     def get_breaks(self):
         # check chain breaks
@@ -259,17 +263,15 @@ class ProteinFile:
         return brk
 
     def get_first_residue_id(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
-        for ch in structure.get_chains():
+        for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     return residue.get_id()[1]
         return 0
 
     def get_residue_list(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
         residues = {}
-        for ch in structure.get_chains():
+        for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if residue.__dict__['resname'] != 'HOH':
@@ -277,10 +279,9 @@ class ProteinFile:
         return residues
 
     def get_seq_one_letter_code(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
         seq = ''
         k = list(SEQ_CODE.keys())
-        for ch in structure.get_chains():
+        for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if (residue.id[0].strip()=='' and self.atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM) and (residue.child_dict[self.atom].altloc.strip()=='' or residue.child_dict[self.atom].altloc.strip() == 'A'):
@@ -294,15 +295,13 @@ class ProteinFile:
         return seq
 
     def filter_by_chain(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
-        self.io.set_structure(structure)
+        self.io.set_structure(self._get_structure())
         self.out_file = self.data_file.replace(self.ext, "_" + self.chain + self.ext)
         self.io.save(self.out_file, ChainAndResidueSelect(self.chain))
         del self.io
 
     def filter_by_atom(self):
-        structure = self.get_parser().get_structure(self.pdbcode, self.data_file)
-        self.io.set_structure(structure)
+        self.io.set_structure(self._get_structure())
         self.out_file = self.out_file.replace(self.ext, "_" + self.atom + self.ext)
         self.io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
         del self.io
@@ -542,9 +541,10 @@ class MMCIFfile(ProteinFile):
 
     def download_only(self):
         try:
-            ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif.gz', self.data_file + '.gz')
-            _gunzip(self.data_file + '.gz')
-            os.remove(self.data_file + '.gz')
+            if not path.isfile(self.data_file) or path.getsize(self.data_file) == 0:
+                ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif.gz', self.data_file + '.gz')
+                _gunzip(self.data_file + '.gz')
+                os.remove(self.data_file + '.gz')
         except Exception as e:
             ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif', self.data_file)
 
@@ -558,9 +558,8 @@ class MMCIFfile(ProteinFile):
             self.filter_by_atom()
         return self.out_file
 
-
     def get_pdb_creation_date(self):
-        return self.get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
+        return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
 
     def get_meta_pubmed(self):
         pubmed_id = self.get_par_from_dict('_citation.pdbx_database_id_PubMed')
@@ -573,11 +572,11 @@ class MMCIFfile(ProteinFile):
         return (doi, pubmed_id, desc, title, src, key, molecutag)
 
     def get_par_from_dict(self, par):
-        return self.get_parser()._mmcif_dict[par][0] if par in self.get_parser()._mmcif_dict else None
+        return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
 
     def get_seq_one_letter_code_can(self):
         model_id = -1
-        for model in self.get_parser().get_structure(self.pdbcode, self.data_file).child_list:
+        for model in self._get_structure().child_list:
             for ch in model.child_list:
                 if ch.id == self.chain:
                     model_id = model.id

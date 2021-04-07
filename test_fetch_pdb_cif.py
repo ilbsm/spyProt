@@ -3,6 +3,7 @@ from spyprot.fetchChainInfo import PdbFile, MMCIFfile, PdbMetaData
 import tempfile
 import os
 import filecmp
+from time import time
 
 
 def test_download_pdb_files():
@@ -111,8 +112,60 @@ def test_pdb_parser_vs_xml():
             assert z.getSeqOneLetterCode() == m.get_seq_one_letter_code()
             assert z.getSeqLength() == m.get_seq_len()
 
-
-
+#
+# def test_time_xml():
+#     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
+#                   '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
+#     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
+#     os.makedirs(dir, exist_ok=True)
+#     from Bio import BiopythonWarning
+#     import warnings
+#     with warnings.catch_warnings():
+#         warnings.simplefilter('ignore', BiopythonWarning)
+#         for el in pdb_chains:
+#             pdb = el.split('_')[0]
+#             chain = el.split('_')[1]
+#             atom = el.split('_')[2] if len(el.split('_')) > 2 else 'CA'
+#             c = getCoordinates(pdbcode=pdb, work_dir=dir, atom=atom)
+#             c.getCalfa(chain=chain, output=dir + '/' + el + '_xml.xyz')
+#             c.getCalfaPdbFormat(chain=chain, output=dir + '/' + el + '_xml.pdb')
+#             z = fetchPDBinfo(pdbcode=pdb, chain=chain, atom=atom, work_dir=dir)
+#             ch_r = z.getOrderedChains()
+#             z.getMissingArray()
+#             z.getSeqOneLetterCode()
+#
+#
+# def test_time_cif():
+#     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
+#                   '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
+#     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
+#     os.makedirs(dir, exist_ok=True)
+#     from Bio import BiopythonWarning
+#     import warnings
+#     with warnings.catch_warnings():
+#         warnings.simplefilter('ignore', BiopythonWarning)
+#         for el in pdb_chains:
+#             pdb = el.split('_')[0]
+#             chain = el.split('_')[1]
+#             atom = el.split('_')[2] if len(el.split('_')) > 2 else 'CA'
+#             m = MMCIFfile(dir, pdb, chain, atom=atom)
+#             m.download()
+#             m.get_pdb_data()
+#             m.save_xyz(dir + '/' + el + '_cif.xyz')
+#             m.save_pdb(dir + '/' + el + '_cif.pdb')
+#             m.get_missing_array()
+#             m.get_seq_one_letter_code()
+#             m.get_chains()
+#
+# def time_it(proc):
+#     t0 = time()
+#     proc()
+#     t = time()-t0
+#     print('Done {0} in {1} s.'.format(proc.__name__, round(t, 3)))
+#
+#
+# time_it(test_time_cif)
+# time_it(test_time_xml)
 #dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
 #PdbFile(dir, "4v7m", "B3").download()
 #p = PdbFile(dir, "1j85", "A")
@@ -121,7 +174,7 @@ def test_pdb_parser_vs_xml():
 #p.get_pdb_data()
 #test_download_pdb_files()
 #test_pdb_parser_vs_xml()
-test_cif_parser_vs_xml()
+#test_cif_parser_vs_xml()
 
 #test_download_pdb_files()
 # dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
