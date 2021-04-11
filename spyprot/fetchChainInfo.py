@@ -559,7 +559,8 @@ class MMCIFfile(ProteinFile):
         return self.out_file
 
     def get_pdb_creation_date(self):
-        return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
+        #return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
+        return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date']
 
     def get_meta_pubmed(self):
         pubmed_id = self.get_par_from_dict('_citation.pdbx_database_id_PubMed')
@@ -572,7 +573,17 @@ class MMCIFfile(ProteinFile):
         return (doi, pubmed_id, desc, title, src, key, molecutag)
 
     def get_par_from_dict(self, par):
-        return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
+        #return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
+        if par in self._get_parser()._mmcif_dict:
+            res = self._get_parser()._mmcif_dict[par]
+            if type(res) == str:
+                return res
+            elif type(res) == list:
+                return res[0]
+            else:
+                return 'coooooooo'
+        else:
+            return None
 
     def get_seq_one_letter_code_can(self):
         model_id = -1
