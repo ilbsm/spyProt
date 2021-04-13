@@ -560,7 +560,7 @@ class MMCIFfile(ProteinFile):
 
     def get_pdb_creation_date(self):
         #return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
-        return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date']
+        return self.get_par_from_dict('_pdbx_database_status.recvd_initial_deposition_date')
 
     def get_meta_pubmed(self):
         pubmed_id = self.get_par_from_dict('_citation.pdbx_database_id_PubMed')
