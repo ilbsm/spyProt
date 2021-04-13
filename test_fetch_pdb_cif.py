@@ -9,7 +9,7 @@ from time import time
 def test_download_pdb_files():
     dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
     os.makedirs(dir, exist_ok=True)
-   
+
     p = PdbFile(dir, "1j85", "A").download()
     p = PdbFile(dir, "1k36", "A").download()
     p = PdbFile(dir, "1k36", "A", 'CA').download()
@@ -36,9 +36,8 @@ def test_download_pdb_files():
 
 
 def test_cif_parser_vs_xml():
-    #pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
-    #              '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
-    pdb_chains = ['1j85_A', '6ki1_A', '6jgz_B', '6gaz_AA_C3\'', '4wf9_X_C3\'']
+    pdb_chains = ['1j85_A', '6f38_M', '6sgb_F5', '6SGB_DH', '6SGB_UY', '4v7m_B3', '6az3_B', '6az3_e', '6ki1_A', '6jgz_B',
+                  '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
     from Bio import BiopythonWarning
@@ -58,8 +57,14 @@ def test_cif_parser_vs_xml():
             c = getCoordinates(pdbcode=pdb, work_dir=dir, atom=atom)
             c.getCalfa(chain=chain, output=dir + '/' + el + '_xml.xyz')
             c.getCalfaPdbFormat(chain=chain, output=dir + '/' + el + '_xml.pdb')
-            assert filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False) == True
-            assert filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False) == True
+            xyz_cmp = filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False)
+            if not xyz_cmp:
+                print('Problem with xyz file comparison for: ' + el)
+            assert xyz_cmp is True
+            pdb_cmp = filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False)
+            if not pdb_cmp:
+                print('Problem with pdb file comparison for: ' + el)
+            assert pdb_cmp is True
 
             z = fetchPDBinfo(pdbcode=pdb, chain=chain, atom=atom, work_dir=dir)
             ch_r = z.getOrderedChains()
@@ -74,8 +79,6 @@ def test_cif_parser_vs_xml():
             assert z.getPdbCreationDate() == m.get_pdb_creation_date()
             pm = m.get_meta_pubmed()
             zpm = z.getPubtitlePubmed()
-            #print(pm)
-            #print(zpm)
             for i in range(len(zpm)):
                 l = str(zpm[i]).replace(' ', '').lower()
                 r = str(pm[i]).replace(' ', '').lower()
@@ -118,6 +121,8 @@ def test_pdb_parser_vs_xml():
             assert z.getSeqOneLetterCode() == m.get_seq_one_letter_code()
             assert z.getSeqLength() == m.get_seq_len()
 
+
+test_cif_parser_vs_xml()
 #
 # def test_time_xml():
 #     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',

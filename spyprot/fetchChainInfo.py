@@ -113,7 +113,7 @@ class ProteinFile:
     '''
 
     def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
-        self.pdbcode = pdbcode
+        self.pdbcode = pdbcode.lower()
         self.chain = chain
         self.dir = dir
         self.atom = atom
@@ -158,6 +158,7 @@ class ProteinFile:
 
     def get_pdb_data(self):
         first_resid = -1
+        gap_resid = 0
         for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
@@ -170,22 +171,25 @@ class ProteinFile:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
                         # Filter HETATM other than those in ALLOWED_HETATM
-                        if not residue.id[0].strip()=='' or (residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM):
+                        if not residue.id[0].strip()=='' or (residue.id[0].strip().startswith('H_') and residue.resname not in ALLOWED_HETATM):
                             continue
-                        seq_id = residue.get_id()[1]
-                        if int(seq_id) == prev_seqid:
-                            prev_seqid = int(seq_id)
+                        seq_id = int(residue.get_id()[1])
+                        if seq_id == prev_seqid:
+                            prev_seqid = seq_id
                             print(prev_seqid)
                             continue
-                        prev_seqid = int(seq_id)
+                        elif prev_seqid > 0 and seq_id - gap_resid - first_resid!= prev_seqid:
+                            print('Gap in residue numbering for %s %s between: %i and %i ' % (self.pdbcode, self.chain, prev_seqid + gap_resid, seq_id))
+                            gap_resid += seq_id - gap_resid - prev_seqid - 1
                         coords = [residue.child_dict[self.atom].coord[i] for i in
                                   range(len(residue.child_dict[self.atom].coord))]
                         line = [seq_id] + coords
                         if None not in line:
                             if self.preserve_seqid:
-                                new_seqid = int(line[0])
+                                new_seqid = line[0]
                             else:
-                                new_seqid = int(line[0]) - first_resid + 1
+                                new_seqid = line[0] - first_resid + 1 - gap_resid
+                        prev_seqid = new_seqid
                         self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
         self.crystlen = len(self.pdbdata)
         if self.crystlen==0:
