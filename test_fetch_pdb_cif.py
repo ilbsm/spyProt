@@ -36,8 +36,8 @@ def test_download_pdb_files():
 
 
 def test_cif_parser_vs_xml():
-    pdb_chains = ['6ki1_A', '6sgb_UY', '4v7m_B3', '6az3_B', '6az3_e', '6jgz_B',
-                  '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'', '6sgb_F5', '6SGB_DH', '1j85_A', '6f38_M'
+    pdb_chains = ['1j85_A', '6ki1_A', '4v7m_B3', '6az3_B', '6az3_e', '6az3_2_C3\'', '6jgz_B',
+                  '6gaz_AA_C3\'', '4wf9_X_C3\'', '6sgb_UY', '6sgb_F5', '6sgb_DH', '6f38_M'
                   ]
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
