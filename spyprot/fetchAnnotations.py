@@ -55,7 +55,7 @@ class AnnotationBase:
         enz_file = path.join(self.data_file_path, file_locs[1])
         if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(
                 enz_file) and datetime.datetime.now().timestamp() - os.stat(
-                enz_file).st_mtime > self.refresh_file_interval):
+            enz_file).st_mtime > self.refresh_file_interval):
             print('downloading file: ' + enz_file + " from: " + file_locs[0])
             AnnotationBase.touch(enz_file + ".flg")
             try:

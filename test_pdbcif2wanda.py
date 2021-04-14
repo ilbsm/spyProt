@@ -34,4 +34,3 @@ def test_cif2wanda():
         assert bridges == [('SS', 'A', 121, 151)]
         assert gaps_dict == {'A': ''}
         assert str_begin_dict == {'A': 2}
-

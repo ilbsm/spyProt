@@ -205,8 +205,8 @@ def accessPFAM(protID):
     try:
         # Take first <p> of the blockContent div of the clanBlock div
         clanData = \
-        clanData.split('<div class="block" id="clanBlock">')[1].split('<div class="blockContent">')[1].split("<p>")[
-            1].split("</p>")[0]
+            clanData.split('<div class="block" id="clanBlock">')[1].split('<div class="blockContent">')[1].split("<p>")[
+                1].split("</p>")[0]
 
         # Simple split to get the name and CL ID from between the <a> handles
         clanID = "CL" + clanData.split("/clan/CL")[1].split('"')[0]

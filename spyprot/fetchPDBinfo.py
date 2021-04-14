@@ -363,6 +363,7 @@ class fetchPDBinfo(XmlPdbParser):
 
     def getChains(self):
         return self.chains
+
     def getOrderedChains(self):
         return self.ordered_chains
 

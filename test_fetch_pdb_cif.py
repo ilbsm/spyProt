@@ -1,9 +1,9 @@
-from spyprot import fetchPDBinfo, getCoordinates
-from spyprot.fetchChainInfo import PdbFile, MMCIFfile, PdbMetaData
-import tempfile
-import os
 import filecmp
-from time import time
+import os
+import tempfile
+
+from spyprot import fetchPDBinfo, getCoordinates
+from spyprot.fetchChainInfo import PdbFile, MMCIFfile
 
 
 def test_download_pdb_files():
@@ -29,7 +29,7 @@ def test_download_pdb_files():
     MMCIFfile(dir, "1et4", "A").download()
 
     print('PO CO TEN PLIK? ON MI SIĘ NIE ŚCIĄGA. BARTOSZ')
-    #PdbFile(dir, "4v7m", "B3").download()
+    # PdbFile(dir, "4v7m", "B3").download()
     # Bundle but not translation
     # PdbFile(dir, "6az3", "2").download()
     PdbFile(dir, "6az3", "2", 'C3\'').download()
@@ -38,7 +38,7 @@ def test_download_pdb_files():
 def test_cif_parser_vs_xml():
     pdb_chains = ['6ki1_A', '6SGB_UY', '4v7m_B3', '6az3_B', '6az3_e', '6jgz_B',
                   '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'', '6sgb_F5', '6SGB_DH', '1j85_A', '6f38_M'
-    ]
+                  ]
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
     from Bio import BiopythonWarning
@@ -49,7 +49,7 @@ def test_cif_parser_vs_xml():
             print(el)
             pdb = el.split('_')[0]
             chain = el.split('_')[1]
-            atom = el.split('_')[2] if len(el.split('_'))>2 else 'CA'
+            atom = el.split('_')[2] if len(el.split('_')) > 2 else 'CA'
             m = MMCIFfile(dir, pdb, chain, atom=atom)
             m.download()
             m.get_pdb_data()
@@ -70,8 +70,9 @@ def test_cif_parser_vs_xml():
             z = fetchPDBinfo(pdbcode=pdb, chain=chain, atom=atom, work_dir=dir)
             ch_r = z.getOrderedChains()
             ch_l = m.get_chains()
-            if ch_l!=ch_r:
-                print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+            if ch_l != ch_r:
+                print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(
+                    ch_r))
                 print('Chains not in XML: ' + str(list(set(ch_l) - set(ch_r))))
             assert z.getMissingArray() == m.get_missing_array()
             assert z.getMissing() == m.get_missing()
@@ -84,9 +85,9 @@ def test_cif_parser_vs_xml():
             for i in range(len(zpm)):
                 l = str(zpm[i]).replace(' ', '').lower()
                 r = str(pm[i]).replace(' ', '').lower()
-                if l!=r:
-                    print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' +r)
-                assert l==r
+                if l != r:
+                    print('problem ' + pdb + ' ' + chain + ': ' + l + '!=' + r)
+                assert l == r
 
 
 def test_pdb_parser_vs_xml():
@@ -115,8 +116,9 @@ def test_pdb_parser_vs_xml():
             z = fetchPDBinfo(pdbcode=pdb, chain=chain, work_dir=dir)
             ch_r = z.getOrderedChains()
             ch_l = m.get_chains()
-            if ch_l!=ch_r:
-                print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+            if ch_l != ch_r:
+                print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(
+                    ch_r))
                 print('Chains not in PDB: ' + str(list(set(ch_l) - set(ch_r))))
             assert z.getMissingArray() == m.get_missing_array()
             assert z.getMissing() == m.get_missing()
@@ -126,7 +128,7 @@ def test_pdb_parser_vs_xml():
 
 
 test_cif_parser_vs_xml()
-#test_pdb_parser_vs_xml()
+# test_pdb_parser_vs_xml()
 #
 # def test_time_xml():
 #     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
@@ -181,17 +183,17 @@ test_cif_parser_vs_xml()
 #
 # time_it(test_time_cif)
 # time_it(test_time_xml)
-#dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
-#PdbFile(dir, "4v7m", "B3").download()
-#p = PdbFile(dir, "1j85", "A")
-#p.download()
-#p.get_pdb_creation_date()
-#p.get_pdb_data()
-#test_download_pdb_files()
-#test_pdb_parser_vs_xml()
-#test_cif_parser_vs_xml()
+# dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
+# PdbFile(dir, "4v7m", "B3").download()
+# p = PdbFile(dir, "1j85", "A")
+# p.download()
+# p.get_pdb_creation_date()
+# p.get_pdb_data()
+# test_download_pdb_files()
+# test_pdb_parser_vs_xml()
+# test_cif_parser_vs_xml()
 
-#test_download_pdb_files()
+# test_download_pdb_files()
 # dir = os.path.join(tempfile.gettempdir(), 'test_pdb')
 # outf = PdbFile(dir, "4v7m").download()
 # print(outf)

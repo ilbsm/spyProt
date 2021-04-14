@@ -26,79 +26,79 @@ DEBUG = False
 
 ALLOWED_HETATM = ['MSE', 'ORN', 'PCA', 'DGL']
 
-SEQ_CODE = { "ALA": 'A',
-             "CYS": 'C',
-             "ASP": 'D',
-             "GLU": 'E',
-             "PHE": 'F',
-             "GLY": 'G',
-             "HIS": 'H',
-             "ILE": 'I',
-             "LYS": 'K',
-             "LEU": 'L',
-             "MET": 'M',
-             "MSE": 'M',
-             "ASN": 'N',
-             "PYL": 'O',
-             "PRO": 'P',
-             "GLN": 'Q',
-             "ARG": 'R',
-             "SER": 'S',
-             "THR": 'T',
-             "SEC": 'U',
-             "VAL": 'V',
-             "TRP": 'W',
-             "5HP": 'E',
-             "ABA": 'A',
-             "AIB": 'A',
-             "BMT": 'T',
-             "CEA": 'C',
-             "CGU": 'E',
-             "CME": 'C',
-             "CRO": 'X',
-             "CSD": 'C',
-             "CSO": 'C',
-             "CSS": 'C',
-             "CSW": 'C',
-             "CSX": 'C',
-             "CXM": 'M',
-             "DAL": 'A',
-             "DAR": 'R',
-             "DCY": 'C',
-             "DGL": 'E',
-             "DGN": 'Q',
-             "DHI": 'H',
-             "DIL": 'I',
-             "DIV": 'V',
-             "DLE": 'L',
-             "DLY": 'K',
-             "DPN": 'F',
-             "DPR": 'P',
-             "DSG": 'N',
-             "DSN": 'S',
-             "DSP": 'D',
-             "DTH": 'T',
-             "DTR": 'X',
-             "DTY": 'Y',
-             "DVA": 'V',
-             "FME": 'M',
-             "HYP": 'P',
-             "KCX": 'K',
-             "LLP": 'K',
-             "MLE": 'L',
-             "MVA": 'V',
-             "NLE": 'L',
-             "OCS": 'C',
-             "ORN": 'A',
-             "PCA": 'E',
-             "PTR": 'Y',
-             "SAR": 'G',
-             "SEP": 'S',
-             "STY": 'Y',
-             "TPO": 'T',
-             "TPQ": 'F',
-             "TYS": 'Y',
-             "TYR": 'Y'}
+SEQ_CODE = {"ALA": 'A',
+            "CYS": 'C',
+            "ASP": 'D',
+            "GLU": 'E',
+            "PHE": 'F',
+            "GLY": 'G',
+            "HIS": 'H',
+            "ILE": 'I',
+            "LYS": 'K',
+            "LEU": 'L',
+            "MET": 'M',
+            "MSE": 'M',
+            "ASN": 'N',
+            "PYL": 'O',
+            "PRO": 'P',
+            "GLN": 'Q',
+            "ARG": 'R',
+            "SER": 'S',
+            "THR": 'T',
+            "SEC": 'U',
+            "VAL": 'V',
+            "TRP": 'W',
+            "5HP": 'E',
+            "ABA": 'A',
+            "AIB": 'A',
+            "BMT": 'T',
+            "CEA": 'C',
+            "CGU": 'E',
+            "CME": 'C',
+            "CRO": 'X',
+            "CSD": 'C',
+            "CSO": 'C',
+            "CSS": 'C',
+            "CSW": 'C',
+            "CSX": 'C',
+            "CXM": 'M',
+            "DAL": 'A',
+            "DAR": 'R',
+            "DCY": 'C',
+            "DGL": 'E',
+            "DGN": 'Q',
+            "DHI": 'H',
+            "DIL": 'I',
+            "DIV": 'V',
+            "DLE": 'L',
+            "DLY": 'K',
+            "DPN": 'F',
+            "DPR": 'P',
+            "DSG": 'N',
+            "DSN": 'S',
+            "DSP": 'D',
+            "DTH": 'T',
+            "DTR": 'X',
+            "DTY": 'Y',
+            "DVA": 'V',
+            "FME": 'M',
+            "HYP": 'P',
+            "KCX": 'K',
+            "LLP": 'K',
+            "MLE": 'L',
+            "MVA": 'V',
+            "NLE": 'L',
+            "OCS": 'C',
+            "ORN": 'A',
+            "PCA": 'E',
+            "PTR": 'Y',
+            "SAR": 'G',
+            "SEP": 'S',
+            "STY": 'Y',
+            "TPO": 'T',
+            "TPQ": 'F',
+            "TYS": 'Y',
+            "TYR": 'Y'}
 
 
 class SpyprotWarning(Warning):
@@ -170,16 +170,18 @@ class ProteinFile:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
                         # Filter HETATM other than those in ALLOWED_HETATM
-                        if not residue.id[0].strip()=='' or (residue.id[0].strip().startswith('H_') and residue.resname not in ALLOWED_HETATM):
+                        if not residue.id[0].strip() == '' or (
+                                residue.id[0].strip().startswith('H_') and residue.resname not in ALLOWED_HETATM):
                             continue
                         seq_id = self._get_seqid_from_residue(residue)
                         if seq_id == prev_seqid:
                             prev_seqid = seq_id
                             print(prev_seqid)
                             continue
-                        elif prev_seqid > 0 and seq_id - first_resid!= prev_seqid:
+                        elif prev_seqid > 0 and seq_id - first_resid != prev_seqid:
                             warnings.warn(
-                                'Gap in residues for %s %s between: %i and %i ' % (self.pdbcode, self.chain, prev_seqid, seq_id), SpyprotWarning,
+                                'Gap in residues for %s %s between: %i and %i ' % (
+                                self.pdbcode, self.chain, prev_seqid, seq_id), SpyprotWarning,
                             )
                         coords = [residue.child_dict[self.atom].coord[i] for i in
                                   range(len(residue.child_dict[self.atom].coord))]
@@ -190,7 +192,8 @@ class ProteinFile:
                             else:
                                 new_seqid = line[0] - first_resid + 1
                         prev_seqid = new_seqid
-                        self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
+                        self.pdbdata.append(
+                            [new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
         self.crystlen = len(self.pdbdata)
         if self.crystlen == 0:
             return []
@@ -292,8 +295,11 @@ class ProteinFile:
         for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
-                    if (residue.id[0].strip()=='' and self.atom in residue.child_dict.keys()) or (residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM) and (residue.child_dict[self.atom].altloc.strip()=='' or residue.child_dict[self.atom].altloc.strip() == 'A'):
-                        if self.atom =='CA':
+                    if (residue.id[0].strip() == '' and self.atom in residue.child_dict.keys()) or (
+                            residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM) and (
+                            residue.child_dict[self.atom].altloc.strip() == '' or residue.child_dict[
+                        self.atom].altloc.strip() == 'A'):
+                        if self.atom == 'CA':
                             if residue.resname in k:
                                 seq += SEQ_CODE[residue.resname]
                             else:
@@ -405,8 +411,10 @@ class PdbFile(ProteinFile):
        chain: string - if empty return full PDB file or list of translated PDB files in case of PDB Bundles
 
     '''
+
     def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
-        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom, preserve_seqid=preserve_seqid)
+        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom,
+                         preserve_seqid=preserve_seqid)
         self.data_file = path.join(self.dir, self.pdbcode + '.pdb')
         self.parser = PDBParser()
         self.io = PDBIO()
@@ -534,8 +542,9 @@ class PdbFile(ProteinFile):
                             outfile.write("".join(newLine) + "\n")
                 else:
                     outfile.write(line[0] + "\n")
+
     # Unreliable
-    #def get_pdb_creation_date(self):
+    # def get_pdb_creation_date(self):
     #    return self.get_parser().header['deposition_date']
     def _get_seqid_from_residue(self, residue):
         return int(residue.get_id()[1])
@@ -543,7 +552,8 @@ class PdbFile(ProteinFile):
 
 class MMCIFfile(ProteinFile):
     def __init__(self, dir, pdbcode, chain=None, atom='CA', filter_by_atom=None, preserve_seqid=False):
-        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom, preserve_seqid=preserve_seqid)
+        super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom,
+                         preserve_seqid=preserve_seqid)
         self.data_file = path.join(self.dir, self.pdbcode + ".cif")
         self.parser = MMCIFParser()
         self.io = MMCIFIO()
@@ -552,11 +562,13 @@ class MMCIFfile(ProteinFile):
     def download_only(self):
         try:
             if not path.isfile(self.data_file) or path.getsize(self.data_file) == 0:
-                ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif.gz', self.data_file + '.gz')
+                ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif.gz',
+                                      self.data_file + '.gz')
                 _gunzip(self.data_file + '.gz')
                 os.remove(self.data_file + '.gz')
         except Exception as e:
-            ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif', self.data_file)
+            ProteinFile._get_file('http://www.ebi.ac.uk/pdbe/entry-files/download/' + self.pdbcode + '.cif',
+                                  self.data_file)
 
     def download(self):
         self.download_only()
@@ -570,10 +582,10 @@ class MMCIFfile(ProteinFile):
 
     def _get_seqid_from_residue(self, residue):
         return int(self._get_parser()._mmcif_dict["_atom_site.label_seq_id"][
-            residue.child_dict[self.atom].serial_number - 1])
+                       residue.child_dict[self.atom].serial_number - 1])
 
     def get_pdb_creation_date(self):
-        #return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
+        # return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
         return self.get_par_from_dict('_pdbx_database_status.recvd_initial_deposition_date')
 
     def get_meta_pubmed(self):
@@ -587,7 +599,7 @@ class MMCIFfile(ProteinFile):
         return (doi, pubmed_id, desc, title, src, key, molecutag)
 
     def get_par_from_dict(self, par):
-        #return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
+        # return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
         if par in self._get_parser()._mmcif_dict:
             res = self._get_parser()._mmcif_dict[par]
             if type(res) == str:
@@ -642,11 +654,11 @@ class PDBeSolrSearch:
             documents = response.documents
             if DEBUG:
                 logging.getLogger().debug("Found %d matching entities in %d entries." % (
-                len(documents), len({rd["pdb_id"] for rd in documents})))
+                    len(documents), len({rd["pdb_id"] for rd in documents})))
             return documents
         except Exception as e:
             raise SearchException('%s: error getting query response from: %s for: %s\n %s' % (
-            self.__class__.__name__, PDBE_SOLR_URL, str(query), str(e)))
+                self.__class__.__name__, PDBE_SOLR_URL, str(query), str(e)))
 
     def get(self):
         return self.results
@@ -757,7 +769,7 @@ class SimilarChains(PDBeSolrSearch):
                     self.identifiers.append(el['identifier'])
         except Exception as er:
             raise SearchException('SimilarChains: Error in response from RCSB search for: %s, %s URL:\n%s\n%s' % (
-            self.pdb, self.chain, urllib.parse.unquote(url), str(er)))
+                self.pdb, self.chain, urllib.parse.unquote(url), str(er)))
 
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
@@ -872,13 +884,15 @@ class PdbMetaData(PDBeSolrSearch):
         super().__init__()
 
         self.results = []
-        documents = self.exec_query("pdb_id,entity_id, chain_id, assembly_composition, deposition_date, number_of_protein_chains, "
-                                    "pubmed_id, citation_doi, citation_title, title, mutation, mutation_type, assembly_composition, enzyme_systematic_name, enzyme_name, molecule_sequence", [('pdb_id', pdbcode)])
+        documents = self.exec_query(
+            "pdb_id,entity_id, chain_id, assembly_composition, deposition_date, number_of_protein_chains, "
+            "pubmed_id, citation_doi, citation_title, title, mutation, mutation_type, assembly_composition, enzyme_systematic_name, enzyme_name, molecule_sequence",
+            [('pdb_id', pdbcode)])
 
         for i in range(len(documents)):
             chain_id = documents[i]['chain_id']
             self.results = sorted(chain_id)
-            #break
+            # break
 
             # doi = doi[0].text if doi else None
             # molecutag = molecutag[0].text if molecutag else None
@@ -889,5 +903,3 @@ class PdbMetaData(PDBeSolrSearch):
             # desc = desc[0].text.capitalize() if desc else None
             #
             # return (doi, pubmed, desc, title, src, key, molecutag)
-
-

@@ -25,10 +25,10 @@ def convertXYZtoPDB(data_xyz, output_gz, start_idx='', stop_idx=''):
             if fragment:
                 if resid >= start_idx and resid <= stop_idx:
                     converted += "ATOM%7d  CA  GLY A%4d    %8.3f%8.3f%8.3f  1.00  0.00           C\n" % (
-                    resid, resid, x, y, z)
+                        resid, resid, x, y, z)
             else:
                 converted += "ATOM%7d  CA  GLY A%4d    %8.3f%8.3f%8.3f  1.00  0.00           C\n" % (
-                resid, resid, x, y, z)
+                    resid, resid, x, y, z)
 
     fw = gzip.open(output_gz, 'wb')
     fw.write(converted)

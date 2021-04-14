@@ -62,9 +62,10 @@ def _gzip(file):
     with open(file, 'rb') as f_in, gzip.open(file + '.gz', 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
 
+
 # GUnzip
 def _gunzip(file):
-    with gzip.open(file, 'rb') as f_in, open(file.replace('.gz',''), 'wb') as f_out:
+    with gzip.open(file, 'rb') as f_in, open(file.replace('.gz', ''), 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
 
 
