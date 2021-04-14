@@ -158,12 +158,11 @@ class ProteinFile:
 
     def get_pdb_data(self):
         first_resid = -1
-        gap_resid = 0
         for ch in self._get_structure().get_chains():
             if ch.get_id() == self.chain:
                 for residue in ch.get_residues():
                     if self.atom in residue.child_dict:
-                        first_resid = int(residue.get_id()[1])
+                        first_resid = self._get_seqid_from_residue(residue)
                         break
         prev_seqid = first_resid - 9999999999999
         for ch in self._get_structure().get_chains():
@@ -173,14 +172,15 @@ class ProteinFile:
                         # Filter HETATM other than those in ALLOWED_HETATM
                         if not residue.id[0].strip()=='' or (residue.id[0].strip().startswith('H_') and residue.resname not in ALLOWED_HETATM):
                             continue
-                        seq_id = int(residue.get_id()[1])
+                        seq_id = self._get_seqid_from_residue(residue)
                         if seq_id == prev_seqid:
                             prev_seqid = seq_id
                             print(prev_seqid)
                             continue
-                        elif prev_seqid > 0 and seq_id - gap_resid - first_resid!= prev_seqid:
-                            print('Gap in residue numbering for %s %s between: %i and %i ' % (self.pdbcode, self.chain, prev_seqid + gap_resid, seq_id))
-                            gap_resid += seq_id - gap_resid - prev_seqid - 1
+                        elif prev_seqid > 0 and seq_id - first_resid!= prev_seqid:
+                            warnings.warn(
+                                'Gap in residues for %s %s between: %i and %i ' % (self.pdbcode, self.chain, prev_seqid, seq_id), SpyprotWarning,
+                            )
                         coords = [residue.child_dict[self.atom].coord[i] for i in
                                   range(len(residue.child_dict[self.atom].coord))]
                         line = [seq_id] + coords
@@ -188,11 +188,11 @@ class ProteinFile:
                             if self.preserve_seqid:
                                 new_seqid = line[0]
                             else:
-                                new_seqid = line[0] - first_resid + 1 - gap_resid
+                                new_seqid = line[0] - first_resid + 1
                         prev_seqid = new_seqid
                         self.pdbdata.append([new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
         self.crystlen = len(self.pdbdata)
-        if self.crystlen==0:
+        if self.crystlen == 0:
             return []
         seq = [x[0] for x in self.pdbdata]
         self.missing = [x for x in range(seq[0], seq[-1] + 1) if x not in seq]
@@ -201,6 +201,10 @@ class ProteinFile:
         self.seq_idx = seq
         self.seq_len = seq[-1]
         return self.pdbdata
+
+    # Overridden in subclasses
+    def _get_seqid_from_residue(self, residue):
+        pass
 
     def get_ca_len(self):
         return self.crystlen
@@ -533,6 +537,8 @@ class PdbFile(ProteinFile):
     # Unreliable
     #def get_pdb_creation_date(self):
     #    return self.get_parser().header['deposition_date']
+    def _get_seqid_from_residue(self, residue):
+        return int(residue.get_id()[1])
 
 
 class MMCIFfile(ProteinFile):
@@ -561,6 +567,10 @@ class MMCIFfile(ProteinFile):
         if self.filter_by_atom:
             self.filter_by_atom()
         return self.out_file
+
+    def _get_seqid_from_residue(self, residue):
+        return int(self._get_parser()._mmcif_dict["_atom_site.label_seq_id"][
+            residue.child_dict[self.atom].serial_number - 1])
 
     def get_pdb_creation_date(self):
         #return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]

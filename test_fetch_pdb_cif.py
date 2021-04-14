@@ -36,8 +36,9 @@ def test_download_pdb_files():
 
 
 def test_cif_parser_vs_xml():
-    pdb_chains = ['1j85_A', '6f38_M', '6sgb_F5', '6SGB_DH', '6SGB_UY', '4v7m_B3', '6az3_B', '6az3_e', '6ki1_A', '6jgz_B',
-                  '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
+    pdb_chains = ['6ki1_A', '6SGB_UY', '4v7m_B3', '6az3_B', '6az3_e', '6jgz_B',
+                  '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'', '6sgb_F5', '6SGB_DH', '1j85_A', '6f38_M'
+    ]
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
     from Bio import BiopythonWarning
@@ -71,6 +72,7 @@ def test_cif_parser_vs_xml():
             ch_l = m.get_chains()
             if ch_l!=ch_r:
                 print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+                print('Chains not in XML: ' + str(list(set(ch_l) - set(ch_r))))
             assert z.getMissingArray() == m.get_missing_array()
             assert z.getMissing() == m.get_missing()
             assert z.getCAlen() == m.get_ca_len()
@@ -115,6 +117,7 @@ def test_pdb_parser_vs_xml():
             ch_l = m.get_chains()
             if ch_l!=ch_r:
                 print('Problem ' + pdb + ': ' + str(len(ch_l)) + '!=' + str(len(ch_r)) + '\n' + str(ch_l) + '\n' + str(ch_r))
+                print('Chains not in PDB: ' + str(list(set(ch_l) - set(ch_r))))
             assert z.getMissingArray() == m.get_missing_array()
             assert z.getMissing() == m.get_missing()
             assert z.getCAlen() == m.get_ca_len()
@@ -123,6 +126,7 @@ def test_pdb_parser_vs_xml():
 
 
 test_cif_parser_vs_xml()
+#test_pdb_parser_vs_xml()
 #
 # def test_time_xml():
 #     pdb_chains = ['4v7m_B3', '6az3_B', '6az3_e', '1j85_A', '6ki1_A', '6jgz_B',
