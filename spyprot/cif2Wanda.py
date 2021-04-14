@@ -279,29 +279,28 @@ def run_cif2Wanda(infile, work_dir, outfile):
     cifdict = MMCIF2Dict(infile)
 
     ### fill the chain class information
-    chains = list(set(cifdict['_pdbx_poly_seq_scheme.pdb_strand_id']
-                      + cifdict['_atom_site.auth_asym_id']))
+    chains = list(set(cifdict['_struct_asym.id']))
     chain_data = {chain: Chain(chain) for chain in chains}
     cross_chain_bridges = []
 
     # fill Chain objects with aminoacid sequence
-    for chain, resid, seqid, miss in zip(cifdict['_pdbx_poly_seq_scheme.pdb_strand_id'],
-                                         cifdict['_pdbx_poly_seq_scheme.mon_id'],
-                                         cifdict['_pdbx_poly_seq_scheme.seq_id'],
-                                         cifdict['_pdbx_poly_seq_scheme.pdb_mon_id']):
-        chain_data[chain].add_residue(resid)
-        if miss == '?':
-            chain_data[chain].add_missing(int(seqid), resid)
+    for chain, resid_seq, seqid, resid_struct in zip(cifdict['_pdbx_poly_seq_scheme.asym_id'],
+                                                     cifdict['_pdbx_poly_seq_scheme.mon_id'],
+                                                     cifdict['_pdbx_poly_seq_scheme.seq_id'],
+                                                     cifdict['_pdbx_poly_seq_scheme.pdb_mon_id']):
+        chain_data[chain].add_residue(resid_seq)
+        if resid_struct == '?':
+            chain_data[chain].add_missing(int(seqid), resid_seq)
 
     # fill Chain objects with ssbonds and other links
-    if type(cifdict['_struct_conn.ptnr1_auth_asym_id']) == list:
+    if type(cifdict['_struct_conn.ptnr1_label_asym_id']) == list:
         for chain_beg, chain_end, seqid_beg, seqid_end, resid_beg, resid_end, \
-            atom_beg, atom_end in zip(cifdict['_struct_conn.ptnr1_auth_asym_id'],
-                                      cifdict['_struct_conn.ptnr2_auth_asym_id'],
-                                      cifdict['_struct_conn.ptnr1_auth_seq_id'],
-                                      cifdict['_struct_conn.ptnr2_auth_seq_id'],
-                                      cifdict['_struct_conn.ptnr1_auth_comp_id'],
-                                      cifdict['_struct_conn.ptnr2_auth_comp_id'],
+            atom_beg, atom_end in zip(cifdict['_struct_conn.ptnr1_label_asym_id'],
+                                      cifdict['_struct_conn.ptnr2_label_asym_id'],
+                                      cifdict['_struct_conn.ptnr1_label_seq_id'],
+                                      cifdict['_struct_conn.ptnr2_label_seq_id'],
+                                      cifdict['_struct_conn.ptnr1_label_comp_id'],
+                                      cifdict['_struct_conn.ptnr2_label_comp_id'],
                                       cifdict['_struct_conn.ptnr1_label_atom_id'],
                                       cifdict['_struct_conn.ptnr2_label_atom_id']):
             if chain_beg == chain_end:
@@ -310,10 +309,10 @@ def run_cif2Wanda(infile, work_dir, outfile):
             else:
                 cross_chain_bridges.append(["LINK", chain_beg, resid_beg, atom_beg, int(seqid_beg),
                                             chain_end, resid_end, atom_end, int(seqid_end)])
-    elif type(cifdict['_struct_conn.ptnr1_auth_asym_id']) == str:
-        chain_beg, chain_end = cifdict['_struct_conn.ptnr1_auth_asym_id'], cifdict['_struct_conn.ptnr2_auth_asym_id']
-        seqid_beg, seqid_end = cifdict['_struct_conn.ptnr1_auth_seq_id'], cifdict['_struct_conn.ptnr2_auth_seq_id']
-        resid_beg, resid_end = cifdict['_struct_conn.ptnr1_auth_comp_id'], cifdict['_struct_conn.ptnr2_auth_comp_id']
+    elif type(cifdict['_struct_conn.ptnr1_label_asym_id']) == str:
+        chain_beg, chain_end = cifdict['_struct_conn.ptnr1_label_asym_id'], cifdict['_struct_conn.ptnr2_label_asym_id']
+        seqid_beg, seqid_end = cifdict['_struct_conn.ptnr1_label_seq_id'], cifdict['_struct_conn.ptnr2_label_seq_id']
+        resid_beg, resid_end = cifdict['_struct_conn.ptnr1_label_comp_id'], cifdict['_struct_conn.ptnr2_label_comp_id']
         atom_beg, atom_end = cifdict['_struct_conn.ptnr1_label_atom_id'], cifdict['_struct_conn.ptnr2_label_atom_id']
         if chain_beg == chain_end:
             chain_data[chain_beg].add_bridge(["LINK", resid_beg, atom_beg, int(seqid_beg),
@@ -323,10 +322,10 @@ def run_cif2Wanda(infile, work_dir, outfile):
                                         chain_end, resid_end, atom_end, int(seqid_end)])
 
     # fill Chain objects with coordinates
-    for chain, seqid, resid, atom, x, y, z in zip(cifdict['_atom_site.auth_asym_id'],
-                                                  cifdict['_atom_site.auth_seq_id'],
-                                                  cifdict['_atom_site.auth_comp_id'],
-                                                  cifdict['_atom_site.auth_atom_id'],
+    for chain, seqid, resid, atom, x, y, z in zip(cifdict['_atom_site.label_asym_id'],
+                                                  cifdict['_atom_site.label_seq_id'],
+                                                  cifdict['_atom_site.label_comp_id'],
+                                                  cifdict['_atom_site.label_atom_id'],
                                                   cifdict['_atom_site.Cartn_x'],
                                                   cifdict['_atom_site.Cartn_y'],
                                                   cifdict['_atom_site.Cartn_z']):
