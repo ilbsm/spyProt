@@ -27,7 +27,7 @@ class XmlPdbParser:
 
     def download_if_not_exist(self):
         pdb_xml_file = path.join(self.work_dir, self.pdb + '.xml.gz')
-        if not path.isfile(pdb_xml_file):
+        if not path.isfile(pdb_xml_file) or path.getsize(pdb_xml_file) == 0:
             f = urllib.request.urlopen('https://www.rcsb.org/pdb/files/' + self.pdb + '.xml.gz')
             fw = open(pdb_xml_file, "wb")
             fw.write(f.read())

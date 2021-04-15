@@ -1,4 +1,3 @@
-import urllib
 import numpy as np
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 

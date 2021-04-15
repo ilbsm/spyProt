@@ -81,7 +81,7 @@ def getSubchain(filename, start_idx, stop_idx, bzip=True, fmt='pdb'):
                 out_lines.append(line)
             elif atm.match(line):
                 i = int(line[22:26])
-                if i >= start_idx and i <= stop_idx:
+                if start_idx <= i <= stop_idx:
                     out_lines.append(line)
     elif filetype == 'xyz':
         for line in lines:
@@ -90,7 +90,7 @@ def getSubchain(filename, start_idx, stop_idx, bzip=True, fmt='pdb'):
             else:
                 d = line.split()
                 i = int(d[0])
-                if i >= start_idx and i <= stop_idx:
+                if start_idx <= i <= stop_idx:
                     out_lines.append(line)
     if bzip:
         f = bz2.BZ2File(filename, "wb")

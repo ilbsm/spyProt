@@ -54,9 +54,9 @@ def accessPDB(protID, downloadFasta=True, fastaTimestamp=True):
         return None
 
     # Downloading the fasta sequence
-    if downloadFasta == True:
+    if downloadFasta:
         # Adding timestamp to the output file based on the preference
-        if fastaTimestamp == True:
+        if fastaTimestamp:
             fastaStamp = datetime.now().isoformat()
         else:
             fastaStamp = ""
@@ -245,7 +245,7 @@ def mapToPFAM(protID):
 # Deprecated / will be rewritten from scratch
 def combineResults(fromPDB, fromKP, fromPFAM):
     # Write out results to a result file
-    if fromPDB != None:
+    if fromPDB is not None:
 
         # Combine everything
         # Write to a result file
