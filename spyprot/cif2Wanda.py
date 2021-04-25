@@ -1,8 +1,10 @@
 import urllib
 import numpy as np
+import itertools
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 
 #######
+# Modified by Bartosz Gren, b.gren@cent.uw.edu.pl
 # Author: Pawel Dabrowski-Tumanski
 # p.dabrowski@cent.uw.edu.pl
 # Date 02.10.2015; version from 28.01.2016
@@ -130,11 +132,11 @@ class Chain:
         for k in range(len(self.bridges) - 1, -1, -1):
             if (abs(self.bridges[k][3] - self.bridges[k][6]) < 5):
                 self.bridges.pop(k)
-        ### defining bond type
-        for bridge in self.bridges:
-            if (bridge[0] == "LINK"):
-                bridge[0] = self.bond_type(bridge[1], bridge[2], self.N_end(bridge[3]),
-                                           bridge[4], bridge[5], self.C_end(bridge[6]))
+        ### defining bond type -- now in main
+        #for bridge in self.bridges:
+        #    if (bridge[0] == "LINK"):
+        #        bridge[0] = self.bond_type(bridge[1], bridge[2], self.N_end(bridge[3]),
+        #                                   bridge[4], bridge[5], self.C_end(bridge[6]))
         ### removing bonds and links which do not exist!
         for k in range(len(self.bridges) - 1, -1, -1):
             if (find_index(self.bridges[k][3], self.coordinates) == None
@@ -271,72 +273,168 @@ class Chain:
                 return self.coordinates[k][0]
 
 
+##########################################################################
+### functions loading cif data item columns, please use them instead of "cifdict"
+
+# cifdict returns list of strings or a string, this function
+# unites this behaviour and always returns a list.
+def get_feature(feature, cifdict):
+    data = cifdict[feature]
+    if type(data) == str:
+        return [data]
+    return data
+
+# returns generator which generates lines over a zipped lists of features
+def iterate_with_features(features, cifdict):
+    if type(features) == str:
+        features = [features]
+    data = [get_feature(feature, cifdict) for feature in features]
+    for line in zip(data):
+        yield line
+
 ################################ Main part ################################
 ### search for chains and build chain classes
 def run_cif2Wanda(infile, work_dir, outfile):
     # ignored search for secondary structures
     # infile -- file name or handle
-    cifdict = MMCIF2Dict(infile)
+    cifdict = MMCIF2Dict(infile) # in the rest of code please do not use "cifdict"
+                                 # use "get_features" or "iterate_with_features"
+    # features, all names can be checked here https://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
+    f_chains = '_struct_asym.id' # chain
+    f_entities = '_entity.id'    # entity (unique chain)
+
+    # features of sequence
+    f_seq_chain = '_pdbx_poly_seq_scheme.asym_id'       # asymmetric unit
+    f_seq_resid = '_pdbx_poly_seq_scheme.mon_id'        # residue
+    f_seq_resid_pdb ='_pdbx_poly_seq_scheme.pdb_mon_id' # residue according to pdb
+    f_seq_seqid = '_pdbx_poly_seq_scheme.seq_id'        # sequence id
+    f_seq_list = [f_seq_chain, f_seq_resid, f_seq_resid_pdb, f_seqid]
+
+    # features of links
+    f_link_type = '_struct_conn.conn_type_id'            # type of a link connection
+    f_link_chain1 = '_struct_conn.ptnr1_label_asym_id'   # asymmetric unit of 1st link component
+    f_link_chain2 = '_struct_conn.ptnr2_label_asym_id'   # asymmetric unit of 2nd link component
+    f_link_seqid1 = '_struct_conn.ptnr1_label_seq_id'    # sequence id of 1st link component
+    f_link_seqid2 = '_struct_conn.ptnr2_label_seq_id'    # sequence id of 2nd link component
+    f_link_resid1 = '_struct_conn.ptnr1_label_comp_id'   # residue (cif) of 1st link component
+    f_link_resid2 = '_struct_conn.ptnr2_label_comp_id'   # residue (cif) of 2nd link component
+    f_link_resid1_au = '_struct_conn.ptnr1_auth_comp_id' # residue (author numeration) of 1st link component
+    f_link_resid2_au = '_struct_conn.ptnr2_auth_comp_id' # residue (author numeration) of 2nd link component
+    f_link_atom1 = '_struct_conn.ptnr1_label_atom_id'    # atom of 1st link component
+    f_link_atom2 = '_struct_conn.ptnr2_label_atom_id'    # atom of 2nd link component
+    f_link_list = [f_conn_type, f_conn_chain1, f_conn_chain2, f_conn_seqid1, f_conn_seqid2,
+                   f_conn_resid1, f_conn_resid2, f_conn_resid1_au, f_conn_resid2_au, 
+                   f_conn_atom1, f_conn_atom2]
+
+    #features of structure
+    f_struct_chain = '_atom_site.label_asym_id' # asymmetric unit
+    f_struct_seqid = '_atom_site.label_seq_id'  # sequence id
+    f_struct_resid = '_atom_site.label_comp_id' # residue
+    f_struct_atom = '_atom_site.label_atom_id'  # atom
+    f_struct_x = '_atom_site.Cartn_x'           # x coordinate
+    f_struct_y = '_atom_site.Cartn_y'           # y coordinate
+    f_struct_z = '_atom_site.Cartn_z'           # z coorindate
+    f_struct_list = [f_struct_chain, f_struct_seqid, f_struct_resid, 
+                     f_struct_atom, f_struct_x, f_struct_y, f_struct_z]
 
     ### fill the chain class information
-    chains = list(set(cifdict['_struct_asym.id']))
-    chain_data = {chain: Chain(chain) for chain in chains}
+    entity_data = iterate_with_features(f_entities, f_chains)
+    chain_dict = {}
+    for entity, chain in set(iter(entity_data)):
+        if chain in chain_dict: 
+            if chain_dict[chain] != entity:
+                print('One chain belongs to many entities?!')
+        else:
+            chain_dict[chain] = entity
+    chains_all = list(chain_dict.keys())
+    chain_data = {chain: Chain(chain) for chain in chains_all}
     cross_chain_bridges = []
 
     # fill Chain objects with aminoacid sequence
-    for chain, resid_seq, seqid, resid_struct in zip(cifdict['_pdbx_poly_seq_scheme.asym_id'],
-                                                     cifdict['_pdbx_poly_seq_scheme.mon_id'],
-                                                     cifdict['_pdbx_poly_seq_scheme.seq_id'],
-                                                     cifdict['_pdbx_poly_seq_scheme.pdb_mon_id']):
-        chain_data[chain].add_residue(resid_seq)
-        if resid_struct == '?':
-            chain_data[chain].add_missing(int(seqid), resid_seq)
+    seq_data = iterate_with_features(f_seq_list, cifdict) # creating generator
+    for q_chain, q_resid, q_resid_pdb, q_seqid in iter(seq_data):
+        chain_data[q_chain].add_residue(q_resid)
+        if q_resid_pdb == '?':
+            chain_data[q_chain].add_missing(int(q_seqid), q_resid)
 
     # fill Chain objects with ssbonds and other links
-    if type(cifdict['_struct_conn.ptnr1_label_asym_id']) == list:
-        for chain_beg, chain_end, seqid_beg, seqid_end, resid_beg, resid_end, \
-            atom_beg, atom_end in zip(cifdict['_struct_conn.ptnr1_label_asym_id'],
-                                      cifdict['_struct_conn.ptnr2_label_asym_id'],
-                                      cifdict['_struct_conn.ptnr1_label_seq_id'],
-                                      cifdict['_struct_conn.ptnr2_label_seq_id'],
-                                      cifdict['_struct_conn.ptnr1_label_comp_id'],
-                                      cifdict['_struct_conn.ptnr2_label_comp_id'],
-                                      cifdict['_struct_conn.ptnr1_label_atom_id'],
-                                      cifdict['_struct_conn.ptnr2_label_atom_id']):
-            if chain_beg == chain_end:
-                chain_data[chain_beg].add_bridge(["LINK", resid_beg, atom_beg, int(seqid_beg),
-                                                  resid_end, atom_end, int(seqid_end)])
+    link_data = iterate_with_features(f_link_list, cifdict) # creating generator
+    metal_ions = {} # container for eventual metal-coordainated and ionic bonds
+    for (l_type, l_chain1, l_chain2, l_seqid1, l_seqid2, l_resid1, l_resid2,\
+         l_resid1_au, l_resid2_au, l_atom1, l_atom2) in iter(link_data):
+
+        # searching for all covalent bonds (disulfides too)
+        if l_type in ['disulf', 'covale']:
+            if l_type == 'disulf':
+                bridge_type = 'SS'
             else:
-                cross_chain_bridges.append(["LINK", chain_beg, resid_beg, atom_beg, int(seqid_beg),
-                                            chain_end, resid_end, atom_end, int(seqid_end)])
-    elif type(cifdict['_struct_conn.ptnr1_label_asym_id']) == str:
-        chain_beg, chain_end = cifdict['_struct_conn.ptnr1_label_asym_id'], cifdict['_struct_conn.ptnr2_label_asym_id']
-        seqid_beg, seqid_end = cifdict['_struct_conn.ptnr1_label_seq_id'], cifdict['_struct_conn.ptnr2_label_seq_id']
-        resid_beg, resid_end = cifdict['_struct_conn.ptnr1_label_comp_id'], cifdict['_struct_conn.ptnr2_label_comp_id']
-        atom_beg, atom_end = cifdict['_struct_conn.ptnr1_label_atom_id'], cifdict['_struct_conn.ptnr2_label_atom_id']
-        if chain_beg == chain_end:
-            chain_data[chain_beg].add_bridge(["LINK", resid_beg, atom_beg, int(seqid_beg),
-                                              resid_end, atom_end, int(seqid_end)])
-        else:
-            cross_chain_bridges.append(["LINK", chain_beg, resid_beg, atom_beg, int(seqid_beg),
-                                        chain_end, resid_end, atom_end, int(seqid_end)])
+                a1, a2 = sorted((l_atom1[0], l_atom2[0]))
+                if a1 == "C":
+                    if   a2 == "N": bridge_type = "Amide"
+                    elif a2 == "O": bridge_type = "Ester"
+                    elif a2 == "S": bridge_type = "Thioester"
+                    else:           bridge_type = 'Others'
+                else: bridge_type = 'Others'
+            # filling containers with covalent link data
+            # if chainging please look also 30 lines lower
+            if l_chain1 == l_chain2:
+                chain_data[l_chain1].add_bridge([bridge_type,
+                                                 l_resid1, l_atom1, int(l_seqid1),
+                                                 l_resid2, l_atom2, int(l_seqid2)])
+            else:
+                cross_chain_bridges.append([bridge_type,
+                                            l_chain1, l_resid1, l_atom1, int(l_seqid1),
+                                            l_chain2, l_resid2, l_atom2, int(l_seqid2)])
+        # searching for metal coordinated bonds
+        elif l_type == 'metalc': 
+            # assuming that one set of variables is from metal
+            if l_resid1 not in AMINOACIDS:
+                if l_resid2 not in AMINOACIDS:
+                    print('What is this link? A double ionic bridge???')
+                else:
+                    l_chain1, l_chain2 = l_chain2, l_chain1
+                    l_seqid1, l_seqid2 = l_seqid2, l_seqid1
+                    l_resid1_au, l_resid2_au = l_resid2_au, l_resid1_au
+                    l_atom1, l_atom2 = l_atom2, l_atom1
+                    l_resid1, l_resid2 = l_resid2, l_resid1
+            # assuming that var1 is from aminoacid and var2 is from metal
+            metal_id = (l_atom2, l_resid2_au)
+            # filling temporary metal container with connected aminoacids
+            if metal_id in metal_ions:
+                metal_ions[metal_id].append([l_chain1, l_resid1, l_atom1, int(l_seqid1)])
+            else:
+                metal_ions[metal_id] = [[l_chain1, l_resid1, l_atom1, int(l_seqid1)]]
+
+    # searching for aminoacid1-metal-aminoacid2 bridges
+    for metal_id, resid_data in metal_ions.items():
+        bridge_type = 'Metal_{}'.format(metal_id[0])
+        resid_data = sorted(resid_data, key = lambda x: x[3]) # sorting by sequence id
+        if len(resid_data) > 1:
+            for l1, l2 in itertools.combinations(resid_data,2):
+                l_chain1, l_resid1, l_atom1, l_seqid1 = l1
+                l_chain2, l_resid2, l_atom2, l_seqid2 = l2
+                # filling containers with aminoacid1-aminoacid2 data
+                # if chainging please look also 30 lines higher
+                if l_chain1 == l_chain2:
+                    chain_data[l_chain1].add_bridge([bridge_type,
+                                                     l_resid1, l_atom1, int(l_seqid1),
+                                                     l_resid2, l_atom2, int(l_seqid2)])
+                else:
+                    cross_chain_bridges.append([bridge_type,
+                                                l_chain1, l_resid1, l_atom1, int(l_seqid1),
+                                                l_chain2, l_resid2, l_atom2, int(l_seqid2)])
 
     # fill Chain objects with coordinates
-    for chain, seqid, resid, atom, x, y, z in zip(cifdict['_atom_site.label_asym_id'],
-                                                  cifdict['_atom_site.label_seq_id'],
-                                                  cifdict['_atom_site.label_comp_id'],
-                                                  cifdict['_atom_site.label_atom_id'],
-                                                  cifdict['_atom_site.Cartn_x'],
-                                                  cifdict['_atom_site.Cartn_y'],
-                                                  cifdict['_atom_site.Cartn_z']):
-        if atom == 'CA':
-            chain_data[chain].add_coordinate(int(seqid), [float(x), float(y), float(z)], resid)
+    struct_data = iterate_with_features(f_struct_list, cifdict) # creating generator
+    for s_chain, s_seqid, s_resid, s_atom, x, y, z in iter(struct_data):
+        if s_atom == 'CA':
+            chain_data[s_chain].add_coordinate(int(s_seqid), [float(x), float(y), float(z)], s_resid)
 
     ### final collecting
     result = []
     result_gaps = {}
     result_str_begin = {}
-    for chain in chains:
+    for chain in chains_all:
         chain_data[chain].clean()  # clean bridges data - do not comment
         chain_data[chain].chain_print(work_dir + outfile)  # save coordinates to .xyz and .pdb file
         # chain_data[chain].commands_print(sys.argv[1])	# print input commands to Wanda's program consistent with files saved line above. Addition of second argument=1 prints as first field the bond type
