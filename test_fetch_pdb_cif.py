@@ -110,8 +110,8 @@ def test_pdb_parser_vs_xml():
             c = getCoordinates(pdbcode=pdb, work_dir=dir)
             c.getCalfa(chain=chain, output=dir + '/' + el + '_xml.xyz')
             c.getCalfaPdbFormat(chain=chain, output=dir + '/' + el + '_xml.pdb')
-            assert filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False) == True
-            assert filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False) == True
+            assert filecmp.cmp(dir + '/' + el + '_cif.xyz', dir + '/' + el + '_xml.xyz', shallow=False) is True
+            assert filecmp.cmp(dir + '/' + el + '_cif.pdb', dir + '/' + el + '_xml.pdb', shallow=False) is True
 
             z = fetchPDBinfo(pdbcode=pdb, chain=chain, work_dir=dir)
             ch_r = z.getOrderedChains()
@@ -127,7 +127,7 @@ def test_pdb_parser_vs_xml():
             assert z.getSeqLength() == m.get_seq_len()
 
 
-test_cif_parser_vs_xml()
+#test_cif_parser_vs_xml()
 # test_pdb_parser_vs_xml()
 #
 # def test_time_xml():
