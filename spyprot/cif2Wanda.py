@@ -307,7 +307,7 @@ def run_cif2Wanda(infile, work_dir, outfile):
     f_seq_resid = '_pdbx_poly_seq_scheme.mon_id'        # residue
     f_seq_resid_pdb ='_pdbx_poly_seq_scheme.pdb_mon_id' # residue according to pdb
     f_seq_seqid = '_pdbx_poly_seq_scheme.seq_id'        # sequence id
-    f_seq_list = [f_seq_chain, f_seq_resid, f_seq_resid_pdb, f_seqid]
+    f_seq_list = [f_seq_chain, f_seq_resid, f_seq_resid_pdb, f_seq_seqid]
 
     # features of links
     f_link_type = '_struct_conn.conn_type_id'            # type of a link connection
@@ -321,9 +321,9 @@ def run_cif2Wanda(infile, work_dir, outfile):
     f_link_resid2_au = '_struct_conn.ptnr2_auth_comp_id' # residue (author numeration) of 2nd link component
     f_link_atom1 = '_struct_conn.ptnr1_label_atom_id'    # atom of 1st link component
     f_link_atom2 = '_struct_conn.ptnr2_label_atom_id'    # atom of 2nd link component
-    f_link_list = [f_conn_type, f_conn_chain1, f_conn_chain2, f_conn_seqid1, f_conn_seqid2,
-                   f_conn_resid1, f_conn_resid2, f_conn_resid1_au, f_conn_resid2_au, 
-                   f_conn_atom1, f_conn_atom2]
+    f_link_list = [f_link_type, f_link_chain1, f_link_chain2, f_link_seqid1, f_link_seqid2,
+                   f_link_resid1, f_link_resid2, f_link_resid1_au, f_link_resid2_au,
+                   f_link_atom1, f_link_atom2]
 
     #features of structure
     f_struct_chain = '_atom_site.label_asym_id' # asymmetric unit
