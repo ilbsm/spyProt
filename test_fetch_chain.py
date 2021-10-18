@@ -62,10 +62,10 @@ def test_fetchChainInfo_ReleasedProteins():
 def test_fetchChainInfo_ReleasedProteins_2():
     from_date = "2020-11-18"
     res = ReleasedPDBs(from_date).get()
-    assert len(res) == 490
+    assert len(res) == 489
     assert str(res).startswith(
         "[('6hpj', 'B'), ('6kml', 'A'), ('6kml', 'B'), ('6kmq', 'A'), ('6kmq', 'B'), ('6l9k', 'A'), ('6l9k', 'Q'), ('6l9l', 'A'), ('6l9l', 'B'), ('6l9l', 'C'),")
     res = ReleasedPDBs(from_date, only_rna=True).get()
     assert str(res) == "[('6hpj', 'A'), ('6vem', 'A'), ('6wbr', 'B'), ('6wc0', 'B'), ('6wvj', 'R')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
-    assert len(res) == 495
+    assert len(res) == 494
