@@ -1,6 +1,7 @@
 import pytest
 
-from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException
+from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException, \
+    UniprotInfo
 from datetime import datetime
 
 
@@ -71,3 +72,8 @@ def test_fetchChainInfo_ReleasedProteins_2():
     assert str(res) == "[('6hpj', 'A'), ('6vem', 'A'), ('6wbr', 'B'), ('6wc0', 'B'), ('6wvj', 'R')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
     assert len(res) == 494
+
+
+def test_UniprotInfo_sequence():
+    s = UniprotInfo('Q57812').get_sequence()
+    assert s=='MPLVGFMKEKKRATFYLYKNIDGRKLRYLLHKLENVENVDIDTLRRAIEAEKKYKRSITLTEEEEVIIQRLGKSANLLLNCELVKLDEGERA'

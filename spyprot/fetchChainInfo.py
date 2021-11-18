@@ -903,3 +903,18 @@ class PdbMetaData(PDBeSolrSearch):
             # desc = desc[0].text.capitalize() if desc else None
             #
             # return (doi, pubmed, desc, title, src, key, molecutag)
+
+
+class UniprotInfo():
+    def __init__(self, uniid):
+        self.uniid = uniid
+
+    def get_sequence(self):
+        url_from = 'https://www.uniprot.org/uniprot/{}.fasta'.format(self.uniid)
+        seq = None
+        with urllib.request.urlopen(url_from) as url:
+            data = url.read().decode()
+            seq = ''
+            for line in data.split('\n'):
+                seq += line if not line.startswith('>') else ''
+        return seq
