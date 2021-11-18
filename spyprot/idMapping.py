@@ -12,6 +12,7 @@ from tqdm import tqdm  # completely optional; we might exclude it
 # USAGE:
 # generate_mappings(just_pdb_to_uniprot=False) | (dumps to file; checks version and updates automatically; ignores if current)
 # PDB_Uniprot("P10970")                        | (checks mappings in the dump files, accepts PDB ID, PDB ID + " " + Chain, or Uniprot ID; no need to specify)
+from spyprot import AnnotationBase
 
 DEFAULT_DATA_FILE_PATH = os.path.join(os.path.expanduser("~"), ".local", "spyprot")
 
@@ -22,9 +23,7 @@ def download_file(url, output_file, headers=""):
     par_dir = os.path.dirname(output_file)
     if not os.path.exists(par_dir):
         os.makedirs(par_dir)
-    with open(output_file, 'wb') as new_local_file:
-        f = urllib.request.urlopen(url)
-        new_local_file.write(f.read())
+    AnnotationBase.download_file(url, os.path.basename(output_file))
 
 
 def json_dump(input_object, output_file):

@@ -62,26 +62,31 @@ class AnnotationBase:
         with open(path, 'a'):
             os.utime(path, None)
 
+    @staticmethod
+    def download_file(url, file, parent_dir=DEFAULT_DATA_FILE_PATH):
+        enz_file = path.join(parent_dir, file)
+        AnnotationBase.touch(enz_file + ".flg")
+        try:
+            f = urllib.request.urlopen(url)
+            fw = open(enz_file + "_NEW", "wb")
+            fw.write(f.read())
+            fw.close()
+            if path.isfile(enz_file):
+                os.rename(enz_file, enz_file + "_OLD")
+            os.rename(enz_file + "_NEW", enz_file)
+            if path.isfile(enz_file + "_OLD"):
+                os.remove(enz_file + "_OLD")
+        except Exception as e:
+            print("Problem updating file: " + enz_file + " leaving old one" + str(e))
+        if path.isfile(enz_file + ".flg"): os.remove(enz_file + ".flg")
+
     def download_if_not_exist(self, file_locs):
         enz_file = path.join(self.data_file_path, file_locs[1])
         if not path.isfile(enz_file) or (not path.isfile(enz_file + ".flg") and path.isfile(
                 enz_file) and datetime.datetime.now().timestamp() - os.stat(
             enz_file).st_mtime > self.refresh_file_interval):
             print('downloading file: ' + enz_file + " from: " + file_locs[0])
-            AnnotationBase.touch(enz_file + ".flg")
-            try:
-                f = urllib.request.urlopen(file_locs[0])
-                fw = open(enz_file + "_NEW", "wb")
-                fw.write(f.read())
-                fw.close()
-                if path.isfile(enz_file):
-                    os.rename(enz_file, enz_file + "_OLD")
-                os.rename(enz_file + "_NEW", enz_file)
-                if path.isfile(enz_file + "_OLD"):
-                    os.remove(enz_file + "_OLD")
-            except Exception as e:
-                print("Problem updating file: " + enz_file + " leaving old one" + str(e))
-            if path.isfile(enz_file + ".flg"): os.remove(enz_file + ".flg")
+            AnnotationBase.download_file(file_locs[0], file_locs[1], parent_dir=self.data_file_path)
         return enz_file
 
 
