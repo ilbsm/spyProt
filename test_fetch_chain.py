@@ -77,3 +77,8 @@ def test_fetchChainInfo_ReleasedProteins_2():
 def test_UniprotInfo_sequence():
     s = UniprotInfo('Q57812').get_sequence()
     assert s == 'MPLVGFMKEKKRATFYLYKNIDGRKLRYLLHKLENVENVDIDTLRRAIEAEKKYKRSITLTEEEEVIIQRLGKSANLLLNCELVKLDEGERA'
+
+
+def test_UniprotInfo_title():
+    res = UniprotInfo('C6KTF9').get_title()
+    assert res == 'Erythrocyte membrane protein 1, PfEMP1'

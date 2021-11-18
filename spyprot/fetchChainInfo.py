@@ -1,6 +1,7 @@
 import glob
 import os
 import csv
+import re
 import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
@@ -918,3 +919,14 @@ class UniprotInfo():
             for line in data.split('\n'):
                 seq += line if not line.startswith('>') else ''
         return seq
+
+    def get_title(self):
+        url_from = 'https://www.uniprot.org/uniprot/{}.txt'.format(self.uniid)
+        title = None
+        with urllib.request.urlopen(url_from) as url:
+            data = url.read().decode()
+            for line in data.split('\n'):
+                if line.startswith('DE') and line.find('Full=')>0:
+                    title = line.split('=')[1][:-1]
+                    return re.sub(r'{([^}]*)}', '', title).strip()
+        return title
