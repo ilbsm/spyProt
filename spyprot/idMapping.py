@@ -1,3 +1,6 @@
+import os
+import urllib
+
 import requests
 import json
 from os.path import isfile
@@ -10,13 +13,15 @@ from tqdm import tqdm  # completely optional; we might exclude it
 # generate_mappings(just_pdb_to_uniprot=False) | (dumps to file; checks version and updates automatically; ignores if current)
 # PDB_Uniprot("P10970")                        | (checks mappings in the dump files, accepts PDB ID, PDB ID + " " + Chain, or Uniprot ID; no need to specify)
 
+DEFAULT_DATA_FILE_PATH = os.path.join(os.path.expanduser("~"), ".local", "spyprot")
 
 # Help functions
 # Download file with replacament if already same filename locally
 def download_file(url, output_file, headers=""):
     """Downloads file from the web. Doesn't check for overwrites."""
-    with open(output_file, 'w') as new_local_file:
-        new_local_file.write(requests.get(url, headers=headers).content.decode('utf-8'))
+    with open(output_file, 'wb') as new_local_file:
+        f = urllib.request.urlopen(url)
+        new_local_file.write(f.read())
 
 
 def json_dump(input_object, output_file):
@@ -47,7 +52,7 @@ def json_load(input_file):
 # None means: we don't know because we couldn't fint the online file.
 # If no local file we return Fale.
 # If you just want to check, best to set no_download to True
-def PDB_Uniprot_update_list(local_list_file_path="pdb_chain_uniprot.lst", no_download=False):
+def PDB_Uniprot_update_list(local_list_file_path=os.path.join(DEFAULT_DATA_FILE_PATH, "pdb_chain_uniprot.lst"), no_download=False):
     """Two-way mapping between PDB ID and Uniprot IDs.
         1. It checks whether the local version of the mapping file is the most recent and replaces it otherwise.
         2. The returned value (T/F) reports whether the local file is up to date with the remote file.
@@ -92,7 +97,7 @@ def PDB_Uniprot_update_list(local_list_file_path="pdb_chain_uniprot.lst", no_dow
 
 # Parse mapping and put it into a dictionary with "PDBID Chain" key/value pattern
 # PDB => Uniprot by default; set false to have it the other way round
-def parse_mapping(local_list_file_path="pdb_chain_uniprot.lst", pdb_to_uniprot=True):
+def parse_mapping(local_list_file_path=os.path.join(DEFAULT_DATA_FILE_PATH, "pdb_chain_uniprot.lst"), pdb_to_uniprot=True):
     try:
         with open(local_list_file_path, 'r') as raw_mapping:
             # Mapping as a list of lists, each line already divided into columns
@@ -121,9 +126,9 @@ def parse_mapping(local_list_file_path="pdb_chain_uniprot.lst", pdb_to_uniprot=T
 
 # Generates mappings if a more recent version can be found and saves them to file
 # Returns True if generated anything, returns False if nothing has been generated
-def generate_mappings(local_file="pdb_chain_uniprot.lst", just_pdb_to_uniprot=True,
-                      pdb_to_uni_mapping_path="pdb_to_uni_mapping.json",
-                      uni_to_pdb_mapping_path="uni_to_pdb_mapping.json"):
+def generate_mappings(local_file=os.path.join(DEFAULT_DATA_FILE_PATH, "pdb_chain_uniprot.lst"), just_pdb_to_uniprot=True,
+                      pdb_to_uni_mapping_path=os.path.join(DEFAULT_DATA_FILE_PATH, "pdb_to_uni_mapping.json"),
+                      uni_to_pdb_mapping_path=os.path.join(DEFAULT_DATA_FILE_PATH, "uni_to_pdb_mapping.json")):
     """Generates .json dump files containing Python dictionaries with PDB ID=>Uniprot ID and Uniprot ID=>PDB ID mappings."""
     # Check if up to date without downloading first
     if not PDB_Uniprot_update_list(local_list_file_path=local_file, no_download=True):
@@ -154,8 +159,8 @@ def generate_mappings(local_file="pdb_chain_uniprot.lst", just_pdb_to_uniprot=Tr
 
 
 # Look up mapping PDB <=> Uniprot
-def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path="pdb_to_uni_mapping.json",
-                uniprot_to_pdb_mapping_path="uni_to_pdb_mapping.json"):
+def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path=os.path.join(DEFAULT_DATA_FILE_PATH, "pdb_to_uni_mapping.json"),
+                uniprot_to_pdb_mapping_path=os.path.join(DEFAULT_DATA_FILE_PATH, "uni_to_pdb_mapping.json")):
     """Performs lookup in the .json-dumped dictionaries with mappings, both PDB => Uniprot and Uniprot => PDB.
     Search_key can be either a PDBid, a "PDBid Chain" pair or a Uniprot ID; no need to signal it to the function, it recognizes it automatically.
     If search_key == PDBid: return the list of all available mappings

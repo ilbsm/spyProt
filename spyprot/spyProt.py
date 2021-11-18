@@ -93,7 +93,7 @@ def accessKnotProt(protID):
     tempStamp = datetime.now().isoformat()
     try:
         # Temporary file in the making
-        wget.download("http://knotprot.cent.uw.edu.pl/browse/?pdbid=" + protID,
+        wget.download("https://knotprot.cent.uw.edu.pl/browse/?pdbid=" + protID,
                       ".temps/" + protID + "_" + tempStamp + ".txt")
         print("\nKnotProt | Database succesfully accessed at ID:", protID)
     except:
@@ -118,7 +118,7 @@ def accessKnotProt(protID):
         tempStamp = datetime.now().isoformat()
         try:
             # Temporary file in the making
-            wget.download("http://knotprot.cent.uw.edu.pl/view/" + protID + "/A/",
+            wget.download("https://knotprot.cent.uw.edu.pl/view/" + protID + "/A/",
                           ".temps/" + protID + "_" + tempStamp + ".txt")
             print("\nKnotProt | View succesfully accessed at ID:", protID)
         except:
