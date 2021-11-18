@@ -19,6 +19,9 @@ DEFAULT_DATA_FILE_PATH = os.path.join(os.path.expanduser("~"), ".local", "spypro
 # Download file with replacament if already same filename locally
 def download_file(url, output_file, headers=""):
     """Downloads file from the web. Doesn't check for overwrites."""
+    par_dir = os.path.dirname(output_file)
+    if not os.path.exists(par_dir):
+        os.makedirs(par_dir)
     with open(output_file, 'wb') as new_local_file:
         f = urllib.request.urlopen(url)
         new_local_file.write(f.read())
