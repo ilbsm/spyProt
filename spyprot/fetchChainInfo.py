@@ -13,7 +13,7 @@ from itertools import count, groupby
 import requests
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
 from Bio.PDB.MMCIFParser import MMCIFParser
-from mysolr import Solr
+from pysolr import Solr
 import logging, sys
 
 from requests import HTTPError
@@ -630,7 +630,7 @@ class SequenceException(Exception):
 
 class PDBeSolrSearch:
     def __init__(self):
-        self.solr = Solr(PDBE_SOLR_URL, version=4)
+        self.solr = Solr(PDBE_SOLR_URL)
         logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                             format='LOG|%(asctime)s|%(levelname)s  %(message)s', datefmt='%d-%b-%Y %H:%M:%S')
         logging.getLogger("requests").setLevel(logging.WARNING)
@@ -651,7 +651,7 @@ class PDBeSolrSearch:
         try:
             query = {"rows": UNLIMITED_ROWS, "fl": field_list, "q": self.join_with_AND(query_details)}
             response = self.solr.search(**query)
-            documents = response.documents
+            documents = response.docs
             if DEBUG:
                 logging.getLogger().debug("Found %d matching entities in %d entries." % (
                     len(documents), len({rd["pdb_id"] for rd in documents})))
