@@ -1,13 +1,20 @@
 import pytest
 
 from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException, \
-    UniprotInfo
+    UniprotInfo, IdenticalChainsAndEntityId
 from datetime import datetime
 
 
 def test_fetchChainInfo_IdenticalChains():
     f = IdenticalChains('6wm4', 'Y')
     assert str(f.get()) == "['X', 'Y', 'Z']"
+
+
+def test_fetchChainInfo_IdenticalChainsAndEntityId():
+    f = IdenticalChainsAndEntityId('6wm4', 'Y')
+    ent_id, chains = f.get()
+    assert int(ent_id) == 9
+    assert str(chains) == "['X', 'Y', 'Z']"
 
 
 def test_fetchChainInfo_UniqueChains():

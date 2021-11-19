@@ -690,6 +690,36 @@ class IdenticalChains(PDBeSolrSearch):
                 break
 
 
+class IdenticalChainsAndEntityId(PDBeSolrSearch):
+    '''
+       Find identical chains to a given one
+
+       example:
+       a = IdenticalChainsAndEntityId("2jlo",chain="A").get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID
+
+       Returns
+       ==========
+       (entity_id, [chains])
+    '''
+
+    def __init__(self, pdbcode, chain):
+        super().__init__()
+
+        self.results = (None, None)
+        documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('pdb_id', pdbcode)])
+
+        for i in range(len(documents)):
+            chain_id = documents[i]['chain_id']
+            ent_id = documents[i]['entity_id']
+            if chain in chain_id:
+                self.results = (ent_id, sorted(chain_id))
+                break
+
+
 class SimilarChains(PDBeSolrSearch):
     '''
        Find similar chains to a given one with sequence identity given as parameter
