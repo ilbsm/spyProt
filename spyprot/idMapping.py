@@ -220,10 +220,10 @@ def PDB_Uniprot(search_key, pdb_to_uniprot_mapping_path=os.path.join(DEFAULT_DAT
             if search_key in uni_to_pdb.keys():
                 return uni_to_pdb[search_key]
             else:
-                print("No mapping found for Uniprot ID:", search_key)
+                #print("No mapping found for Uniprot ID:", search_key)
                 return False
         else:
-            print("Missing Uniprot => PDB mapping.")
+            #print("Missing Uniprot => PDB mapping.")
             return False
 
     # Incorrect search_key

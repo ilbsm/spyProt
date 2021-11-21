@@ -960,3 +960,18 @@ class UniprotInfo():
                     title = line.split('=')[1][:-1]
                     return re.sub(r'{([^}]*)}', '', title).strip()
         return title
+
+    def get_pdbs_positions(self):
+        url_from = 'https://www.uniprot.org/uniprot/{}.txt'.format(self.uniid)
+        pdbs = []
+        with urllib.request.urlopen(url_from) as url:
+            data = url.read().decode()
+            for line in data.split('\n'):
+                if line.startswith('DR') and line.find('PDB;')>0:
+                    els = line.split(';')
+                    pdbcode = els[1].strip()
+                    chains, pos = els[4].strip().split('=')
+                    chains = chains.replace('/',',')
+                    pos = pos.replace('.','')
+                    pdbs.append((pdbcode, chains, pos))
+        return pdbs
