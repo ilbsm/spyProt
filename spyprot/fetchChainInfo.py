@@ -19,7 +19,7 @@ import logging, sys
 
 from requests import HTTPError
 
-from spyprot.common import _gunzip
+from spyprot.common import _gunzip, arraytostring
 
 PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
 UNLIMITED_ROWS = 10000000
@@ -968,10 +968,22 @@ class UniprotInfo():
             data = url.read().decode()
             for line in data.split('\n'):
                 if line.startswith('DR') and line.find('PDB;')>0:
-                    els = line.split(';')
-                    pdbcode = els[1].strip()
-                    chains, pos = els[4].strip().split('=')
-                    chains = chains.replace('/',',')
-                    pos = pos.replace('.','')
-                    pdbs.append((pdbcode, chains, pos))
+                    try:
+                        els = line.split(';')
+                        pdbcode = els[1].strip()
+                        ch_dict = {}
+                        for ch_range in els[4].split(','):
+                            chns, pos = ch_range.strip().split('=')
+                            pos = pos.replace('.', '')
+                            if chns in ch_dict.keys():
+                                pos_list = ch_dict[chns].split(',')
+                                pos_list.append(pos)
+                                ch_dict[chns] = ",".join(pos_list)
+                            else:
+                                ch_dict[chns] = pos
+                        for ch in ch_dict.keys():
+                            if (pdbcode, ch, ch_dict[ch]) not in pdbs:
+                                pdbs.append((pdbcode, ch, ch_dict[ch]))
+                    except Exception as e:
+                        print('Problem reading PDB from Uniprot {} {}\n{}'.format(self.uniid, line, e))
         return pdbs

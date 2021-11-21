@@ -91,7 +91,11 @@ def test_UniprotInfo_title():
     assert res == 'Erythrocyte membrane protein 1, PfEMP1'
 
 def test_UniprotInfo_pdbs():
+    res = UniprotInfo('Q15149').get_pdbs()
+    assert str(res) == "[('1MB8', 'A', '175-403'), ('2N03', 'A', '4403-4606'), ('2ODU', 'A', '410-640'), ('2ODV', 'A', '410-640'), ('3F7P', 'A/B', '175-403'), ('3PDY', 'A/B', '653-858'), ('3PE0', 'A/B', '750-1028'), ('4GDO', 'A/B/C/D/E/F', '1492-1530'), ('4Q58', 'A/B', '175-400'), ('4Q59', 'A/B', '175-400'), ('5J1F', 'A/B', '860-928,999-1116'), ('5J1G', 'A/B', '1114-1343'), ('5J1H', 'A/B', '860-928,999-1116'), ('5J1I', 'A/B', '1114-1482')]"
     res = UniprotInfo('Q03661').get_pdbs()
-    assert str(res) == "[('6QSZ', 'B,D,F,H,J,L,N,P', '1443-1458')]"
+    assert str(res) == "[('6QSZ', 'B/D/F/H/J/L/N/P', '1443-1458')]"
     res = UniprotInfo('P42945').get_pdbs()
     assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769')]"
+
+
