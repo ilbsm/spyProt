@@ -89,3 +89,9 @@ def test_UniprotInfo_sequence():
 def test_UniprotInfo_title():
     res = UniprotInfo('C6KTF9').get_title()
     assert res == 'Erythrocyte membrane protein 1, PfEMP1'
+
+def test_UniprotInfo_pdbs():
+    res = UniprotInfo('Q03661').get_pdbs()
+    assert str(res) == "[('6QSZ', 'B,D,F,H,J,L,N,P', '1443-1458')]"
+    res = UniprotInfo('P42945').get_pdbs()
+    assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769')]"

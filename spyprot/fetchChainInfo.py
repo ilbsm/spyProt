@@ -961,7 +961,7 @@ class UniprotInfo():
                     return re.sub(r'{([^}]*)}', '', title).strip()
         return title
 
-    def get_pdbs_positions(self):
+    def get_pdbs(self):
         url_from = 'https://www.uniprot.org/uniprot/{}.txt'.format(self.uniid)
         pdbs = []
         with urllib.request.urlopen(url_from) as url:
