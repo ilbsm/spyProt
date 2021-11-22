@@ -713,6 +713,9 @@ class IdenticalChainsAndEntityId(PDBeSolrSearch):
         documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition", [('pdb_id', pdbcode)])
 
         for i in range(len(documents)):
+            if 'chain_id' not in documents[i] or 'entity_id' not in documents[i]:
+                self.results = (None, None)
+                continue
             chain_id = documents[i]['chain_id']
             ent_id = documents[i]['entity_id']
             if chain in chain_id:

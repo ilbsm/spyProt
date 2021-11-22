@@ -11,6 +11,10 @@ def test_fetchChainInfo_IdenticalChains():
 
 
 def test_fetchChainInfo_IdenticalChainsAndEntityId():
+    f = IdenticalChainsAndEntityId('7dzp', 'A')
+    ent_id, chains = f.get()
+    assert ent_id == None
+    assert chains == None
     f = IdenticalChainsAndEntityId('6wm4', 'Y')
     ent_id, chains = f.get()
     assert int(ent_id) == 9
