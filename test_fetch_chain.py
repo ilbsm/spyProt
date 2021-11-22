@@ -103,3 +103,9 @@ def test_UniprotInfo_pdbs():
     assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769')]"
 
 
+def test_UniprotInfo_length():
+    lengths = {'O60281': 2723, 'Q15149': 4684, 'Q03661': 1658, 'P42945': 1769}
+    for uniid in lengths.keys():
+        res = UniprotInfo(uniid).get_overall_length()
+        assert res == lengths[uniid]
+

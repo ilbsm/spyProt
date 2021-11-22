@@ -953,6 +953,14 @@ class UniprotInfo():
                 seq += line if not line.startswith('>') else ''
         return seq
 
+    def get_overall_length(self):
+        url_from = 'https://www.uniprot.org/uniprot/{}.txt'.format(self.uniid)
+        with urllib.request.urlopen(url_from) as url:
+            first_line = url.read().decode().split('\n')[0]
+            length = int(first_line.split(';')[1].strip().split(' ')[0])
+            return length
+
+
     def get_title(self):
         url_from = 'https://www.uniprot.org/uniprot/{}.txt'.format(self.uniid)
         title = None
