@@ -288,8 +288,7 @@ def iterate_with_features(features, cifdict):
     if type(features) == str:
         features = [features]
     data = [get_feature(feature, cifdict) for feature in features]
-    for line in zip(data):
-        yield line
+    return data
 
 ################################ Main part ################################
 ### search for chains and build chain classes
