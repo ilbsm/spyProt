@@ -776,10 +776,6 @@ class SimilarChains(PDBeSolrSearch):
   },
   "return_type": "polymer_entity",
   "request_options": {
-    "pager": {
-      "start": 0,
-      "rows": 100
-    },
     "scoring_strategy": "sequence",
     "sort": [
       {
@@ -790,7 +786,7 @@ class SimilarChains(PDBeSolrSearch):
   }
 }               
         """ % (self.identity, self.seq)
-        url = "https://search.rcsb.org/rcsbsearch/v1/query?json={0}".format(urllib.parse.quote(query))
+        url = "https://search.rcsb.org/rcsbsearch/v2/query?json={0}".format(urllib.parse.quote(query))
         try:
             response = requests.get(url)
             if response.status_code == 204 and response.text == '':

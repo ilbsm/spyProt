@@ -46,7 +46,7 @@ def test_fetchChainInfo_UniqueChains_3():
 def test_fetchChainInfo_SimilarChains():
     sim = SimilarChains(pdb='1j85', chain='A')
     assert str(
-        sim.get()) == "[('1J85', 'A'), ('3E5Y', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('4KGN', 'A'), ('4PZK', 'A'), ('5CO4', 'A'), ('6AHW', 'A'), ('6QH8', 'A'), ('6QKV', 'A'), ('7D51', 'A')]"
+        sim.get()) == "[('1J85', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('6QH8', 'A'), ('7D51', 'A'), ('7E3S', 'A')]"
     sim = SimilarChains('6lt7', 'A', identity=30)
     assert len(sim.get()) >= 3
     sim = SimilarChains(pdb='7css', chain='A')
@@ -76,13 +76,13 @@ def test_fetchChainInfo_ReleasedProteins():
 def test_fetchChainInfo_ReleasedProteins_2():
     from_date = "2020-11-18"
     res = ReleasedPDBs(from_date).get()
-    assert len(res) == 489
+    assert len(res) == 487
     assert str(res).startswith(
         "[('6hpj', 'B'), ('6kml', 'A'), ('6kml', 'B'), ('6kmq', 'A'), ('6kmq', 'B'), ('6l9k', 'A'), ('6l9k', 'Q'), ('6l9l', 'A'), ('6l9l', 'B'), ('6l9l', 'C'),")
     res = ReleasedPDBs(from_date, only_rna=True).get()
     assert str(res) == "[('6hpj', 'A'), ('6vem', 'A'), ('6wbr', 'B'), ('6wc0', 'B'), ('6wvj', 'R')]"
     res = ReleasedPDBs(from_date, only_rna=False, only_prot=False).get()
-    assert len(res) == 494
+    assert len(res) == 492
 
 
 def test_UniprotInfo_sequence():
@@ -100,7 +100,7 @@ def test_UniprotInfo_pdbs():
     res = UniprotInfo('Q03661').get_pdbs()
     assert str(res) == "[('6QSZ', 'B/D/F/H/J/L/N/P', '1443-1458')]"
     res = UniprotInfo('P42945').get_pdbs()
-    assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769')]"
+    assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769'), ('7D4I', 'AE', '1-1769'), ('7D5S', 'AE', '1-1769'), ('7D5T', 'AE', '1-1769'), ('7D63', 'AE', '1-1769')]"
 
 
 def test_UniprotInfo_length():
@@ -114,4 +114,3 @@ def test_fetchChainInfo_PdbSequence():
     seqs = ['101m', '102l', '102m']
     res = PdbSequence(seqs).get()
     assert str(res) == "{'102m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKAGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG', '102l': 'MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKAIGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAALINMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRVITTFRTGTWDAYKNL', '101m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG'}"
-
