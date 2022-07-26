@@ -295,7 +295,7 @@ class PfamAnnotation(AnnotationBase):
     def seq_from_uniprot(
             pdb_id):  # returns fasta of the whole protein, not only the sequence from the structure, sometimes there is more than one sequence
         with Session() as s:
-            site = s.get("https://www.uniprot.org/uniprot/?query=database:(type:pdb {})&format=fasta".format(pdb_id),
+            site = s.get("https://rest.uniprot.org/uniprotkb/search?query=xref:pdb-{}&format=fasta".format(pdb_id),
                          allow_redirects=False)
             if site.text:
                 return site.text.split(">")

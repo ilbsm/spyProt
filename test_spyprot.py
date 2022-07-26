@@ -19,7 +19,7 @@ def test_get_pfam_annotations():
     a = PfamAnnotation("1j85", "A")
     assert str(a.get()) == "[('1j85', 'A', 'SpoU_methylase', 'SpoU rRNA Methylase family', 'PF00588', 'K31', 100)]"
     a = PfamAnnotation("3bdg", "B")
-    assert str(a.get()) == "[('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31', 3.5)]"
+    assert str(a.get()) == "[('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31', 98.1)]"
 
 
 def test_fetch_pdb_info():
