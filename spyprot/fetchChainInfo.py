@@ -939,6 +939,34 @@ class PdbMetaData(PDBeSolrSearch):
             # return (doi, pubmed, desc, title, src, key, molecutag)
 
 
+class PdbSequence(PDBeSolrSearch):
+    '''
+       Retrieve meta data for a given structure
+
+       example:
+       a = PdbSequence("2jlo").get()
+       a = PdbSequence(['2jlo','101m']).get()
+
+       Parameters
+       ==========
+       pdbcode: string - PDB ID or list of pdbcodes
+    '''
+
+    def __init__(self, pdbcodes):
+        super().__init__()
+
+        self.results = []
+        if type(pdbcodes)==list:
+            pdbcodes = " OR ".join(pdbcodes)
+        documents = self.exec_query(
+            "pdb_id, molecule_sequence",
+            [('pdb_id', pdbcodes)])
+
+        self.results = {}
+        for i in range(len(documents)):
+            self.results[documents[i]['pdb_id']] = documents[i]['molecule_sequence']
+
+
 class UniprotInfo():
     def __init__(self, uniid):
         self.uniid = uniid

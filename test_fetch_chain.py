@@ -1,7 +1,7 @@
 import pytest
 
 from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException, \
-    UniprotInfo, IdenticalChainsAndEntityId
+    UniprotInfo, IdenticalChainsAndEntityId, PdbSequence
 from datetime import datetime
 
 
@@ -108,4 +108,10 @@ def test_UniprotInfo_length():
     for uniid in lengths.keys():
         res = UniprotInfo(uniid).get_overall_length()
         assert res == lengths[uniid]
+
+
+def test_fetchChainInfo_PdbSequence():
+    seqs = ['101m', '102l', '102m']
+    res = PdbSequence(seqs).get()
+    assert str(res) == "{'102m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKAGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG', '102l': 'MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKAIGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAALINMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRVITTFRTGTWDAYKNL', '101m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG'}"
 
