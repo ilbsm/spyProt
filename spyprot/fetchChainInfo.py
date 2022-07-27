@@ -960,7 +960,7 @@ class PdbSequence(PDBeSolrSearch):
 
         self.results = {}
         for i in range(len(documents)):
-            self.results[documents[i]['pdb_id']] = documents[i]['molecule_sequence']
+            self.results[documents[i]['pdb_id']] = documents[i]['molecule_sequence'] if 'molecule_sequence' in documents[i] else ''
 
 
 class UniprotInfo():
