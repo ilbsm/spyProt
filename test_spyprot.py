@@ -12,7 +12,7 @@ from spyprot.fetchAnnotations import PfamAnnotation, ECAnnotation
 
 def test_get_ec_annotations():
     a = ECAnnotation("1cak", "A")
-    assert str(a.get()) == "[('4.2.1.1', 'Carbonic anhydrase.')]"
+    assert str(a.get()) == "[('4.2.1.1', 'carbonic anhydrase.')]"
 
 
 def test_get_pfam_annotations():

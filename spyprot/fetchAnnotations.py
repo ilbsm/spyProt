@@ -159,6 +159,77 @@ class ECAnnotation(AnnotationBase):
         return o
 
 
+
+
+class ECAnnotationUniProt(AnnotationBase):
+    '''Retrieve EC annotations for a given PDBID and Chain
+
+       Annotations are parsed from files downloaded from expasy and stored locally in:
+       $HOME/.local/spyprot/
+
+       Parameters
+       ==========
+       pdbcode: string
+       chain: string
+
+       Return
+       ======
+       results: list of tuples of EC Code and EC name
+       '''
+
+    def __init__(self, uniprot):
+        super().__init__([PDB_CHAIN_ENZYME, ENZYME_DAT], uniprot, None)
+        q = re.compile(r'^' + self.pdb + '\t' + self.chain + '\t(.*)\t(?P<ec>.*)$')
+
+        with gzip.open(self.first_file) as s:
+            for line in s.readlines():
+                z = q.match(line.decode('utf-8'))
+                if z:
+                    self.identifiers.append(z.group('ec'))
+            for e in self.identifiers:
+                o = self._getNameLocal(e)
+                if o == "" and not e.endswith("-"):
+                    o = self._getName(e)
+                self.results.append((e, o))
+
+    def _getName(self, ec):
+        o = ""
+        try:
+            f = urllib.request.urlopen("https://enzyme.expasy.org/EC/" + ec + ".txt")
+            q = re.compile(r'^DE.{3}(?P<name>.*)$')
+            for line in f.readlines():
+                z = q.match(line.decode('utf-8'))
+                if z:
+                    o = z.group('name')
+                    break
+
+        except Exception as e:
+            print("Problem getting EC name: " + ec + "\n" + str(e))
+        return o
+
+    def _getNameLocal(self, ec):
+        if ec.endswith("-"):
+            return ""
+        o = ""
+        try:
+            with open(self.sec_file, encoding='utf-8') as f:
+                q = re.compile(r'^ID.{3}(' + ec + ')$')
+                id_fnd = False
+                for line in f.readlines():
+                    z = q.match(line)
+                    if z and not id_fnd:
+                        q = re.compile(r'^DE.{3}(?P<name>.*)$')
+                        id_fnd = True
+                        continue
+                    if z and id_fnd:
+                        o = z.group('name')
+                        break
+
+        except Exception as e:
+            print("Problem getting EC name: " + ec + "\n" + str(e))
+        return o
+
+
 class MyValidationError(Exception):
     def __init__(self, message, *args):
         self.message = message

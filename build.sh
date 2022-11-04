@@ -15,7 +15,7 @@ rm -rf $DIR/dist
 rm -rf $DIR/_skbuild
 
 # Setup environment
-python3.8 -m venv $DIR/venv
+python3 -m venv $DIR/venv
 source $DIR/venv/bin/activate
 pip install wheel pytest scikit_build
 pip install -r $DIR/requirements.txt

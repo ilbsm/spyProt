@@ -1,3 +1,4 @@
+import ast
 import glob
 import os
 import csv
@@ -10,6 +11,8 @@ import json
 import warnings
 from os import makedirs, path
 from itertools import count, groupby
+from time import sleep
+from urllib import request
 
 import requests
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
@@ -1022,3 +1025,41 @@ class UniprotInfo():
                     except Exception as e:
                         print('Problem reading PDB from Uniprot {} {}\n{}'.format(self.uniid, line, e))
         return pdbs
+
+
+class UniprotSearch():
+    def __init__(self, fields, accessions):
+        self.fields = fields
+        self.accessions = accessions
+
+    def run(self):
+        #TODO - test and implement
+        insert_text = "%20OR%20".join([f"%28accession%3A{i00[0].split('-')[1]}%29" for i00 in self.accessions])
+        url = f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cxref_pdb%2Cxref_pfam%2Corganism_name%2Clength&format=tsv&query=%28{insert_text}%29"
+        temp_res = []
+        i = 0
+        data1 = None
+        last_error = None
+        while i < 20 and not data1:
+            i += 1
+            try:
+                data1 = request.urlopen(url)
+                data1 = data1.readlines()
+                data1 = [i00.decode("utf-8").rstrip("\n").split("\t") for i00 in data1]
+            except HTTPError as he:
+                last_error = he
+                sleep(10)
+        if not data1:
+            raise Exception('Could not retrieve data from UniProt {} for {}: {}'.format(self.fields, self.accessions, last_error))
+        # for i in data1[1:]:
+        #     for i1 in self.accessions:
+        #         if i[0] in i1[0]:
+        #             temp_data = ast.literal_eval(i1[1])
+        #             max_t = ""
+        #             max_v = 0
+        #             for i2 in temp_data:
+        #                 if temp_data[i2] > max_v:
+        #                     max_t = i2
+        #                     max_v = temp_data[i2]
+        return data1
+
