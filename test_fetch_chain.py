@@ -1,7 +1,7 @@
 import pytest
 
 from spyprot.fetchChainInfo import SimilarChains, UniqueChains, IdenticalChains, ReleasedPDBs, SearchException, \
-    UniprotInfo, IdenticalChainsAndEntityId, PdbSequence
+    UniprotInfo, IdenticalChainsAndEntityId, PdbSequence, UniprotSearch
 from datetime import datetime
 
 
@@ -114,3 +114,11 @@ def test_fetchChainInfo_PdbSequence():
     seqs = ['101m', '102l', '102m']
     res = PdbSequence(seqs).get()
     assert str(res) == "{'102m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKAGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG', '102l': 'MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKAIGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAALINMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRVITTFRTGTWDAYKNL', '101m': 'MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG'}"
+
+
+def test_UniprotSearch():
+    uni = UniprotSearch(
+        ['xref_pdb', 'xref_pfam', 'organism_name', 'organism_id', 'length', 'protein_name', 'reviewed', 'gene_names', 'lineage', 'lineage_ids'], accessions=['A0A3B5KNW3'])
+    res = uni.get()
+    assert str(res) == "{'A0A3B5KNW3': ['', '', 'Takifugu rubripes (Japanese pufferfish) (Fugu rubripes)', '31033', '543', 'Interleukin-1 receptor accessory protein-like', 'unreviewed', 'LOC105417273', 'Takifugu (genus), Tetraodontidae (family), Tetradontoidea (superfamily), Tetraodontoidei (suborder), Tetraodontiformes (order), Eupercaria (no rank), Percomorphaceae (no rank), Euacanthomorphacea (no rank), Acanthomorphata (no rank), Ctenosquamata (no rank), Eurypterygia (no rank), Neoteleostei (no rank), Euteleosteomorpha (cohort), Clupeocephala (no rank), Osteoglossocephalai (no rank), Teleostei (infraclass), Neopterygii (subclass), Actinopteri (class), Actinopterygii (superclass), Euteleostomi (no rank), Teleostomi (no rank), Gnathostomata (no rank), Vertebrata (no rank), Craniata (subphylum), Chordata (phylum), Deuterostomia (no rank), Bilateria (no rank), Eumetazoa (no rank), Metazoa (kingdom), Opisthokonta (no rank), Eukaryota (superkingdom), cellular organisms (no rank)', '31032 (genus), 31031 (family), 32517 (superfamily), 31028 (suborder), 31022 (order), 1489922 (no rank), 1489872 (no rank), 123369 (no rank), 123368 (no rank), 123367 (no rank), 123366 (no rank), 123365 (no rank), 1489388 (cohort), 186625 (no rank), 1489341 (no rank), 32443 (infraclass), 41665 (subclass), 186623 (class), 7898 (superclass), 117571 (no rank), 117570 (no rank), 7776 (no rank), 7742 (no rank), 89593 (subphylum), 7711 (phylum), 33511 (no rank), 33213 (no rank), 6072 (no rank), 33208 (kingdom), 33154 (no rank), 2759 (superkingdom), 131567 (no rank)']}"
+

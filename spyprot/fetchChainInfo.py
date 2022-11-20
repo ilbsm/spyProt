@@ -1,4 +1,3 @@
-import ast
 import glob
 import os
 import csv
@@ -7,12 +6,10 @@ import shutil
 import tarfile
 import urllib.request, urllib.error, urllib.parse
 import datetime
-import json
 import warnings
 from os import makedirs, path
 from itertools import count, groupby
-from time import sleep
-from urllib import request
+from requests.adapters import HTTPAdapter, Retry
 
 import requests
 from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
@@ -22,7 +19,7 @@ import logging, sys
 
 from requests import HTTPError
 
-from spyprot.common import _gunzip, arraytostring
+from spyprot.common import _gunzip
 
 PDBE_SOLR_URL = "https://www.ebi.ac.uk/pdbe/search/pdb"
 UNLIMITED_ROWS = 10000000
@@ -1027,39 +1024,50 @@ class UniprotInfo():
         return pdbs
 
 
+
 class UniprotSearch():
-    def __init__(self, fields, accessions):
-        self.fields = fields
-        self.accessions = accessions
+    '''
+        Search UniProt using the REST API (https://www.uniprot.org/help/api_queries)
+        Possible fields:
+    '''
+    def __init__(self, fields, accessions=None, query=None):
+        self.fields = ['accession']
+        self.fields.extend(fields)
+        self.query = query
+        self.accessions = accessions if isinstance(accessions, (list, tuple)) else [accessions]
+        self.re_next_link = re.compile(r'<(.+)>; rel="next"')
 
-    def run(self):
-        #TODO - test and implement
-        insert_text = "%20OR%20".join([f"%28accession%3A{i00[0].split('-')[1]}%29" for i00 in self.accessions])
-        url = f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cxref_pdb%2Cxref_pfam%2Corganism_name%2Clength&format=tsv&query=%28{insert_text}%29"
-        temp_res = []
-        i = 0
-        data1 = None
-        last_error = None
-        while i < 20 and not data1:
-            i += 1
-            try:
-                data1 = request.urlopen(url)
-                data1 = data1.readlines()
-                data1 = [i00.decode("utf-8").rstrip("\n").split("\t") for i00 in data1]
-            except HTTPError as he:
-                last_error = he
-                sleep(10)
-        if not data1:
-            raise Exception('Could not retrieve data from UniProt {} for {}: {}'.format(self.fields, self.accessions, last_error))
-        # for i in data1[1:]:
-        #     for i1 in self.accessions:
-        #         if i[0] in i1[0]:
-        #             temp_data = ast.literal_eval(i1[1])
-        #             max_t = ""
-        #             max_v = 0
-        #             for i2 in temp_data:
-        #                 if temp_data[i2] > max_v:
-        #                     max_t = i2
-        #                     max_v = temp_data[i2]
-        return data1
+    def get(self):
+        self.session = requests.Session()
+        retries = Retry(total=5, backoff_factor=0.25, status_forcelist=[500, 502, 503, 504])
+        self.session.mount("https://", HTTPAdapter(max_retries=retries))
+        fields_url = '%2C'.join(self.fields)
+        if self.accessions:
+            insert_text = "%20OR%20".join([f"%28accession%3A{i00}" for i00 in self.accessions])
+            size = min(len(self.accessions), 500)
+        else:
+            insert_text = self.query
+            size = 500
+        url = f"https://rest.uniprot.org/uniprotkb/search?fields={fields_url}&format=tsv&query={insert_text}%29&size={size}"
+        results = {}
+        for batch, total in self._get_batch(url):
+            for line in batch.text.splitlines()[1:]:
+                cells = line.split('\t')
+                results[cells[0]] = cells[1:]
+            if int(total) > 100 and size > 100:
+                print(f'{len(results)} / {total}')
+        return results
 
+    def _get_next_link(self, headers):
+        if "Link" in headers:
+            match = self.re_next_link.match(headers["Link"])
+            if match:
+                return match.group(1)
+
+    def _get_batch(self, batch_url):
+        while batch_url:
+            response = self.session.get(batch_url)
+            response.raise_for_status()
+            total = response.headers["x-total-results"]
+            yield response, total
+            batch_url = self._get_next_link(response.headers)
