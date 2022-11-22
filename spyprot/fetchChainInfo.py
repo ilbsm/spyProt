@@ -1037,23 +1037,29 @@ class UniprotSearch():
         self.accessions = accessions if isinstance(accessions, (list, tuple)) else [accessions]
         self.re_next_link = re.compile(r'<(.+)>; rel="next"')
 
-    def get(self):
+    def get(self, as_dict=True):
         self.session = requests.Session()
         retries = Retry(total=5, backoff_factor=0.25, status_forcelist=[500, 502, 503, 504])
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
         fields_url = '%2C'.join(self.fields)
         if self.accessions:
-            insert_text = "%20OR%20".join([f"%28accession%3A{i00}" for i00 in self.accessions])
+            insert_text = '(' + "%20OR%20".join([f"%28accession%3A{i00})" for i00 in self.accessions])
             size = min(len(self.accessions), 500)
         else:
             insert_text = self.query
             size = 500
         url = f"https://rest.uniprot.org/uniprotkb/search?fields={fields_url}&format=tsv&query={insert_text}%29&size={size}"
-        results = {}
+        if as_dict:
+            results = {}
+        else:
+            results = []
         for batch, total in self._get_batch(url):
             for line in batch.text.splitlines()[1:]:
                 cells = line.split('\t')
-                results[cells[0]] = cells[1:]
+                if as_dict:
+                    results[cells[0]] = cells[1:]
+                else:
+                    results.append(cells)
             if int(total) > 100 and size > 100:
                 print(f'{len(results)} / {total}')
         return results
