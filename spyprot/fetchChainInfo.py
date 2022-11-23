@@ -1031,10 +1031,14 @@ class UniprotSearch():
         Possible fields:
     '''
     def __init__(self, fields, accessions=None, query=None):
-        self.fields = ['accession']
-        self.fields.extend(fields)
         self.query = query
-        self.accessions = accessions if isinstance(accessions, (list, tuple)) else [accessions]
+        if accessions:
+            self.fields = ['accession']
+            self.fields.extend(fields)
+            self.accessions = accessions if isinstance(accessions, (list, tuple)) else [accessions]
+        else:
+            self.fields = fields
+            self.accessions = None
         self.re_next_link = re.compile(r'<(.+)>; rel="next"')
 
     def get(self, as_dict=True):
@@ -1043,12 +1047,13 @@ class UniprotSearch():
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
         fields_url = '%2C'.join(self.fields)
         if self.accessions:
-            insert_text = '(' + "%20OR%20".join([f"%28accession%3A{i00})" for i00 in self.accessions])
+            insert_text = '(' + " OR ".join([f"(accession:{i00})" for i00 in self.accessions]) + ')'
             size = min(len(self.accessions), 500)
         else:
             insert_text = self.query
             size = 500
-        url = f"https://rest.uniprot.org/uniprotkb/search?fields={fields_url}&format=tsv&query={insert_text}%29&size={size}"
+        insert_text = urllib.parse.quote(insert_text, safe='')
+        url = f"https://rest.uniprot.org/uniprotkb/search?fields={fields_url}&format=tsv&query={insert_text}&size={size}"
         if as_dict:
             results = {}
         else:
