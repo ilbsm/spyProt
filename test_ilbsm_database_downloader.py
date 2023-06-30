@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from spyprot.ilbsm_database_downloader import ILBSMDatabaseDownloader
+from spyprot.ilbsm_database_downloader import ILBSMDatabaseDownloader, AlphaKnotDatabaseDownloader
 
 
 def test_knotprot_download():
@@ -37,9 +37,8 @@ def test_genus_download():
 
 def test_alphaknot_download():
     SEARCH_STRING = 'https://alphaknot.cent.uw.edu.pl/browse/?cats=&v=&adv=MOUSE&organisms=&knotTypes=4_1&knotTypes=5_1&knotTypes=6_1&array=0&raw=1'
-    #URL_BONDS_PROTEIN = 'https://genus.fuw.edu.pl/file/{0}/{1}/{0}_{1}.chimera'
+    URL_KNOT_MODEL = 'https://alphaknot.cent.uw.edu.pl/model_file/{3}/{0}-F{1}-v{2}.cif'
     with tempfile.TemporaryDirectory() as out_dir:
-        dd = ILBSMDatabaseDownloader(SEARCH_STRING, [], out_dir, create_separate_dirs=False)
+        dd = AlphaKnotDatabaseDownloader(SEARCH_STRING, [URL_KNOT_MODEL], out_dir, create_separate_dirs=False)
         dd.get_all()
-        assert len(os.listdir(out_dir)) >= 95
-
+        assert len(os.listdir(out_dir)) >= 42

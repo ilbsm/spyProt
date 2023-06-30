@@ -2,7 +2,8 @@
 
 Rapid protein overview from multiple databases (RCSB, PDBe, UniProt etc.)
 
-Includes the ilbsm_database_downloader used to download data from [ILBSM databases](https://jsulkowska.cent.uw.edu.pl/) such as: 
+Includes the  ilbsm_database_downloader used to download data from [ILBSM databases](https://jsulkowska.cent.uw.edu.pl/) such as: 
+- [AlphaKnot](https://alphaknot.cent.uw.edu.pl/)
 - [Knotprot](https://knotprot.cent.uw.edu.pl/)
 - [LassoProt](https://lassoprot.cent.uw.edu.pl/)
 - [Genus](https://genus.fuw.edu.pl/)
