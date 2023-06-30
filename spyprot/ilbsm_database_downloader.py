@@ -8,25 +8,26 @@ from urllib.request import urlopen, Request
 logger = logging.getLogger(__name__)
 
 
-def get_proteins(search_url):
-    req = Request(search_url, method='GET')
-    proteins = []
-    with urlopen(req) as resp:
-        data = resp.read().decode('utf-8')
-        for line in data.splitlines():
-            if len(line) > 4 and not line.startswith('#'):
-                cells = line.strip().split(';')
-                proteins.append((cells[0], cells[1]))
-    return proteins
-
-
 class ILBSMDatabaseDownloader:
-    def __init__(self, search_url, download_urls, directory='out', create_separate_dirs=False):
+    def __init__(self, search_url, download_urls, directory='out', create_separate_dirs=False, http_method='GET', sep=';'):
         self.directory = Path(directory)
         self.setup_download_dir()
-        self.proteins = get_proteins(search_url)
+        self.search_url = search_url
+        self.http_method = http_method
+        self.proteins = self.get_proteins(sep=sep)
         self.download_urls = download_urls
         self.create_separate_dirs = create_separate_dirs
+
+    def get_proteins(self, sep=';'):
+        req = Request(self.search_url, method=self.http_method)
+        proteins = []
+        with urlopen(req) as resp:
+            data = resp.read().decode('utf-8')
+            for line in data.splitlines():
+                if len(line) > 4 and not line.startswith('#'):
+                    cells = line.strip().split(sep)
+                    proteins.append((cells[0], cells[1]))
+        return proteins
 
     def download_link(self, download_url, protein):
         file_name = download_url.split('/')[-1]
@@ -50,4 +51,43 @@ class ILBSMDatabaseDownloader:
             download = partial(self.download_link, url)
             with Pool(8) as pl:
                 pl.map(download, self.proteins)
+
+
+def get_proteins_from_alphaknot(search_url):
+    req = Request(search_url, method='GET')
+    proteins = []
+    with urlopen(req) as resp:
+        data = resp.read().decode('utf-8')
+        for line in data.splitlines():
+            if len(line) > 4 and not line.startswith('#'):
+                cells = line.strip().split(';')
+                proteins.append((cells[0], cells[1]))
+    return proteins
+
+class AlphaKnotDatabaseDownloader(ILBSMDatabaseDownloader):
+    def get_proteins(self, sep=';'):
+        cols = ['organism', 'uniprot', 'version', 'category']
+        col_num_dict = {}
+        req = Request(self.search_url, method=self.http_method)
+        proteins = []
+        with urlopen(req) as resp:
+            data = resp.read().decode('utf-8')
+            header = data.splitlines()[0]
+            if header:
+                cells = header.strip().split(sep)
+                i=0
+                for cell in cells:
+                    if cell.lower() in cols:
+                        col_num_dict[cell] = i
+                    i += 1
+            for line in data.splitlines():
+                if len(line) > 4 and not line.startswith('#'):
+                    cells = line.strip().split(sep)
+                    proteins.append((cells[0], cells[1]))
+        return proteins
+
+
+
+
+
 
