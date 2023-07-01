@@ -121,6 +121,9 @@ class AlphaKnotDatabaseDownloader(ILBSMDatabaseDownloader):
             os.makedirs(directory_dir, exist_ok=True)
         download_path = os.path.join(directory_dir, os.path.basename(file_name.format(protein[0], protein[1], protein[2])))
         link = download_url.format(protein[0], protein[1], protein[2], protein[3])
-        with urlopen(link) as image, open(download_path, 'wb') as f:
-            f.write(image.read())
+        try:
+            with urlopen(link) as image, open(download_path, 'wb') as f:
+                f.write(image.read())
+        except Exception as e:
+            logger.error(f'Error downloading file {link} or not writable: {download_path}\n{e}')
         logger.debug('Downloaded %s', link)
