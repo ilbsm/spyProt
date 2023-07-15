@@ -252,14 +252,16 @@ class PfamAnnotation(AnnotationBase):
        results: list of tuples containing attributes: pdbid, chain, pfam_short, pfam_desc, pfam accession code, knot_type, coverage
        '''
 
-    def __init__(self, pdb, chain='A'):
+    def __init__(self, pdb, chain='A', sequence=None, entangled_regions={}, knotprot_ends={}):
         super().__init__([PDB_CHAIN_PFAM, PFAM_DESC], pdb, chain)
         self.uniprot = ""
         self.pfam_domains = {}
-        self.entangled_regions = {}
+        self.entangled_regions = entangled_regions
         self.coverage = {}
         self.domains = {}
         self.pfam_mappings = {}
+        self.knotprot_ends = knotprot_ends
+        self.sequence = sequence
 
         with urllib.request.urlopen(Uni + pdb) as url:
             data = json.loads(url.read().decode())
@@ -274,7 +276,8 @@ class PfamAnnotation(AnnotationBase):
                     self.pfam_mappings[i] = [self.pfam_domains[i]['mappings'][0]['unp_start'],
                                              self.pfam_domains[i]['mappings'][0]['unp_end']]
 
-                self.entangled_regions = PfamAnnotation.get_entangled_region(pdb, chain)
+                if not self.entangled_regions:
+                    self.entangled_regions = self.get_entangled_region(pdb, chain)
                 self.coverage, self.domains = PfamAnnotation.get_entangled_domains(self.entangled_regions,
                                                                                    self.pfam_mappings)
 
@@ -373,13 +376,13 @@ class PfamAnnotation(AnnotationBase):
             else:
                 raise MyValidationError("error: Couldn't find protein sequence in UniProt based on PDB id.")
 
-    @staticmethod
-    def get_entangled_region(pdb_id, chain_id):
+
+    def get_entangled_region(self, pdb_id, chain_id):
         protein_id = PfamAnnotation.seq_from_uniprot(pdb_id)
         seq_protein = PfamAnnotation.fasta2string(protein_id)  # fasta file
-        seq_structure = PfamAnnotation.seq_structure_from_knotprot(pdb_id,
-                                                                   chain_id)  # returns the sequence of the structure that was used to compute entanglement in KnotProt
-        knotprot_ends = PfamAnnotation.nc_cuts_from_knotprot(pdb_id, chain_id)
+        seq_structure = PfamAnnotation.seq_structure_from_knotprot(pdb_id, chain_id) if not self.sequence else self.sequence
+        # returns the sequence of the structure that was used to compute entanglement in KnotProt
+        knotprot_ends = PfamAnnotation.nc_cuts_from_knotprot(pdb_id, chain_id) if not self.knotprot_ends else self.knotprot_ends
         entangled_regions = {}
         for knot in knotprot_ends:
             knotprot_N_end = knotprot_ends[knot][0]
