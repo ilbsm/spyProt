@@ -748,6 +748,8 @@ class SimilarChains(PDBeSolrSearch):
 
         try:
             self.seq = seq if seq else self.get_seq()
+            if len(self.seq) < 11:
+                raise SearchException(f'Too short sequence to check similarity: {pdb}  {chain}')
             self.get_similar()
             self.translate_enity_ids_to_chains()
         except (urllib.error.URLError, HTTPError, SequenceException) as he:
