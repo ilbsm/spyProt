@@ -5,4 +5,4 @@ psutil>=5.6.6
 subprocess32==3.5.4
 wget==3.2
 biopython>=1.78
-pysolr
+pysolr==3.10.0b2
