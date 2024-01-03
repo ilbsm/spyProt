@@ -30,17 +30,20 @@ class ILBSMDatabaseDownloader:
         return proteins
 
     def download_link(self, download_url, protein):
-        file_name = download_url.split('/')[-1]
-        if not file_name.find('{0}') >= 0:
-            file_name = '{0}_{1}_' + file_name
-        directory_dir = os.path.join(self.directory, protein[0], protein[1]) if self.create_separate_dirs else self.directory
-        if self.create_separate_dirs and not os.path.exists(directory_dir):
-            os.makedirs(directory_dir, exist_ok=True)
-        download_path = os.path.join(directory_dir, os.path.basename(file_name.format(protein[0], protein[1])))
-        link = download_url.format(protein[0], protein[1])
-        with urlopen(link) as image, open(download_path, 'wb') as f:
-            f.write(image.read())
-        logger.debug('Downloaded %s', link)
+        try:
+            file_name = download_url.split('/')[-1]
+            if not file_name.find('{0}') >= 0:
+                file_name = '{0}_{1}_' + file_name
+            directory_dir = os.path.join(self.directory, protein[0], protein[1]) if self.create_separate_dirs else self.directory
+            if self.create_separate_dirs and not os.path.exists(directory_dir):
+                os.makedirs(directory_dir, exist_ok=True)
+            download_path = os.path.join(directory_dir, os.path.basename(file_name.format(protein[0], protein[1])))
+            link = download_url.format(protein[0], protein[1])
+            with urlopen(link) as image, open(download_path, 'wb') as f:
+                f.write(image.read())
+            logger.debug('Downloaded %s', link)
+        except Exception as e:
+            logger.error(f'Not downloaded {protein}, error: {e}')
 
     def setup_download_dir(self):
         if not self.directory.exists():
