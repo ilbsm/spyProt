@@ -2,6 +2,8 @@
 
 Rapid protein overview from multiple databases (RCSB, PDBe, UniProt etc.)
 
+Fetch information from for EC, Uniprot, RCSB Search API etc.
+
 Includes the  ilbsm_database_downloader used to download data from [ILBSM databases](https://jsulkowska.cent.uw.edu.pl/) such as: 
 - [AlphaKnot](https://alphaknot.cent.uw.edu.pl/)
 - [Knotprot](https://knotprot.cent.uw.edu.pl/)
