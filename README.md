@@ -1,5 +1,6 @@
-# spyProt ![Python package](https://github.com/ilbsm/spyProt/workflows/Python%20package/badge.svg)
+# spyProt 
 
+[![Python package](https://github.com/ilbsm/spyProt/actions/workflows/python-package.yml/badge.svg)](https://github.com/ilbsm/spyProt/actions/workflows/python-package.yml)
 Rapid protein overview from multiple databases (RCSB, PDBe, UniProt etc.)
 
 Fetch information from for EC, Uniprot, RCSB Search API etc.
