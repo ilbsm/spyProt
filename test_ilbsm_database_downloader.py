@@ -7,7 +7,7 @@ from spyprot.ilbsm_database_downloader import ILBSMDatabaseDownloader
 def test_knotprot_download():
     SEARCH_STRING = 'https://knotprot.cent.uw.edu.pl/browse/?set=True&bridgeType=probab&knotTypes=-31&array=0&raw=1'
     URL_KNOT_MATRIX = 'https://knotprot.cent.uw.edu.pl/static/knot_data/{0}/{1}/{0}_{1}.png'
-    URL_KNOTOID_SUB_RAW = 'https://knotprot.cent.uw.edu.pl/static/knot_data//{0}/{1}/{0}_{1}_data.txt'
+    URL_KNOTOID_SUB_RAW = 'https://knotprot.cent.uw.edu.pl/static/knot_data/{0}/{1}/knotmap_{0}_{1}.txt'
     URL_CHAIN_XYZ = 'https://knotprot.cent.uw.edu.pl/chains/{0}/{1}/chain.xyz.txt'
     out_dir = tempfile.mkdtemp()
     dd = ILBSMDatabaseDownloader(SEARCH_STRING, [URL_KNOT_MATRIX,

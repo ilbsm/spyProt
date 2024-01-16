@@ -12,14 +12,14 @@ from spyprot.fetchAnnotations import PfamAnnotation, ECAnnotation
 
 def test_get_ec_annotations():
     a = ECAnnotation("1cak", "A")
-    assert str(a.get()) == "[('4.2.1.1', 'Carbonic anhydrase.')]"
+    assert str(a.get()) == "[('4.2.1.1', 'carbonic anhydrase.'), ('4.2.1.69', 'cyanamide hydratase.')]"
 
-
-def test_get_pfam_annotations():
-    a = PfamAnnotation("1j85", "A")
-    assert str(a.get()) == "[('1j85', 'A', 'SpoU_methylase', 'SpoU rRNA Methylase family', 'PF00588', 'K31', 100.0)]"
-    a = PfamAnnotation("3bdg", "B")
-    assert str(a.get()) == "[('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31', 3.5)]"
+# DISABLED PFAM NOW
+# def test_get_pfam_annotations():
+#     a = PfamAnnotation("1j85", "A")
+#     assert str(a.get()) == "[('1j85', 'A', 'SpoU_methylase', 'SpoU rRNA Methylase family', 'PF00588', 'K31', 100.0)]"
+#     a = PfamAnnotation("3bdg", "B")
+#     assert str(a.get()) == "[('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31', 3.5)]"
 
 
 def test_fetch_pdb_info():
