@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Create Release
+    name: Create Release for 2.7
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
