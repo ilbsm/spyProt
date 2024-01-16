@@ -27,6 +27,24 @@ jobs:
             - Second Change
           draft: false
           prerelease: false
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install build env
+        run: >-
+          python3 -m
+          pip install
+          wheel scikit_build
+          --user
+      - name: Build a binary wheel and a source tarball
+        run: python3 setup.py bdist_wheel
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
