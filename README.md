@@ -12,3 +12,5 @@ Includes the  ilbsm_database_downloader used to download data from [ILBSM databa
 - [Genus](https://genus.fuw.edu.pl/)
 
 Have a look at tests to see how to use it.
+
+#git tag -d v0.8.8 ; git tag v0.8.8 ; git push origin :v0.8.8 ; git push origin --tags
