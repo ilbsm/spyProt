@@ -13,7 +13,7 @@ jobs:
     name: Release pushed tag
     runs-on: ubuntu-latest
     steps:
-      - name: Create release
+      - name: Create release actually
         env:
           GITHUB_TOKEN: ${{ secrets.PRUBACH_PERSONAL_TOKEN }}
           tag: ${{ github.ref_name }}
