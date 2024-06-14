@@ -826,16 +826,17 @@ class ReleasedPDBs(PDBeSolrSearch):
 
           Return empty list if None found
           example:
-          a = ReleasedProteins("2020-10-10", "2020-11-10").get()
+          a = ReleasedPDBs("2020-10-10", "2020-11-10").get()
 
           Parameters
           ==========
           from_date: datetime or string in format YYYY-MM-DD
           to_date: datetime or string in format YYYY-MM-DD
-          uniq_chains: if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
+          uniq_chains: (default: True) if True return a list of tuples containing (PDBCode, Chain), else return just PDBCodes.
+          with_entity_id: (default: False) if True add entity_id to the returned tuple (PDBCode, EntityId, Chain) - to work must be combined with "uniq_chains" set to True
        '''
 
-    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False):
+    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False, with_entity_id=False):
         super().__init__()
         if type(from_date) is datetime.date:
             from_date = from_date.strftime("%Y-%m-%d")
@@ -860,8 +861,12 @@ class ReleasedPDBs(PDBeSolrSearch):
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
+            entity_id = documents[i]['entity_id']
             if uniq_chains:
-                self.results.append((pid, sorted(chain_id)[0]))
+                if with_entity_id:
+                    self.results.append((pid, entity_id, sorted(chain_id)[0]))
+                else:
+                    self.results.append((pid, sorted(chain_id)[0]))
             else:
                 if pid not in self.results:
                     self.results.append(pid)
