@@ -639,13 +639,13 @@ class PDBeSolrSearch:
     @staticmethod
     def join_with_AND(selectors):
         return " AND ".join(
-            ["%s:%s" % (k, v) for k, v in selectors]
+            ["%s:\"%s\"" % (k, v) for k, v in selectors]
         )
 
     @staticmethod
     def join_with_OR(selectors):
         return " OR ".join(
-            ["%s:%s" % (k, v) for k, v in selectors]
+            ["%s:\"%s\"" % (k, v) for k, v in selectors]
         )
 
     def exec_query(self, field_list, query_details):
