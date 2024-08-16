@@ -836,7 +836,7 @@ class ReleasedPDBs(PDBeSolrSearch):
           with_entity_id: (default: False) if True add entity_id to the returned tuple (PDBCode, EntityId, Chain) - to work must be combined with "uniq_chains" set to True
        '''
 
-    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False, with_entity_id=False, all_molecule_types=False):
+    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False, with_entity_id=False, all_molecule_types=False, with_molecule_type=False):
         super().__init__()
         if type(from_date) is datetime.date:
             from_date = from_date.strftime("%Y-%m-%d")
@@ -868,13 +868,16 @@ class ReleasedPDBs(PDBeSolrSearch):
                                         ])
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
-            chain_id = documents[i]['chain_id']
+            chain_id = documents[i]['chain_id'] if 'chain_id' in documents[i] else None
             entity_id = documents[i]['entity_id']
+            mol_type = documents[i]['molecule_type'] if 'molecule_type' in documents[i] else None
             if uniq_chains:
+                res = [pid, sorted(chain_id)[0] if chain_id else None]
                 if with_entity_id:
-                    self.results.append((pid, entity_id, sorted(chain_id)[0]))
-                else:
-                    self.results.append((pid, sorted(chain_id)[0]))
+                    res.insert(1, entity_id)
+                if with_molecule_type:
+                    res.append(mol_type)
+                self.results.append(res)
             else:
                 if pid not in self.results:
                     self.results.append(pid)
