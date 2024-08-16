@@ -639,13 +639,13 @@ class PDBeSolrSearch:
     @staticmethod
     def join_with_AND(selectors):
         return " AND ".join(
-            ["%s:\"%s\"" % (k, v) for k, v in selectors]
+            ["%s:%s" % (k, v) for k, v in selectors]
         )
 
     @staticmethod
     def join_with_OR(selectors):
         return " OR ".join(
-            ["%s:\"%s\"" % (k, v) for k, v in selectors]
+            ["%s:%s" % (k, v) for k, v in selectors]
         )
 
     def exec_query(self, field_list, query_details):
@@ -836,7 +836,7 @@ class ReleasedPDBs(PDBeSolrSearch):
           with_entity_id: (default: False) if True add entity_id to the returned tuple (PDBCode, EntityId, Chain) - to work must be combined with "uniq_chains" set to True
        '''
 
-    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False, with_entity_id=False):
+    def __init__(self, from_date, to_date='', uniq_chains=True, only_prot=True, only_rna=False, with_entity_id=False, all_molecule_types=False):
         super().__init__()
         if type(from_date) is datetime.date:
             from_date = from_date.strftime("%Y-%m-%d")
@@ -852,12 +852,20 @@ class ReleasedPDBs(PDBeSolrSearch):
         else:
             molecule_type = 'Protein'
 
+
         self.results = []
-        documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_type",
-                                    [
-                                        ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
-                                        ('molecule_type', molecule_type)
-                                    ])
+        if all_molecule_types:
+            documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_type",
+                                        [
+                                            ('release_date',
+                                             '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
+                                        ])
+        else:
+            documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_type",
+                                        [
+                                            ('release_date', '[' + from_date + 'T00:00:00Z TO ' + to_date + 'T23:59:59Z]'),
+                                            ('molecule_type', molecule_type)
+                                        ])
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
