@@ -44,6 +44,8 @@ def test_fetchChainInfo_UniqueChains_3():
 
 
 def test_fetchChainInfo_SimilarChains():
+    sim = SimilarChains(seq="GGAGCAUCGAGGCAGAGCAGUACCCUUCUGGGUCUGCGCCAACACCAACUGGAUCUGAACUGGC", is_rna=True)
+    print(sim.get())
     sim = SimilarChains(pdb='1j85', chain='A')
     assert str(
         sim.get()) == "[('1MXI', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('6QH8', 'A'), ('7D51', 'A'), ('7E3S', 'A')]"
@@ -51,6 +53,8 @@ def test_fetchChainInfo_SimilarChains():
     assert len(sim.get()) >= 3
     sim = SimilarChains(pdb='7css', chain='A')
     assert len(sim.get()) == 0
+    sim = SimilarChains(seq="GGAGCAUCGAGGCAGAGCAGUACCCUUCUGGGUCUGCGCCAACACCAACUGGAUCUGAACUGGC", is_rna=True)
+    print(sim.get())
 
 
 def test_fetchChainInfo_SimilarChains_fail():

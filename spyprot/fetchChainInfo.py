@@ -738,13 +738,14 @@ class SimilarChains(PDBeSolrSearch):
        identity: int - (percentage) of sequence identity
     '''
 
-    def __init__(self, pdb=None, chain='A', seq=None, identity=40):
+    def __init__(self, pdb=None, chain='A', seq=None, identity=40, is_rna=False):
         super().__init__()
         self.chain = chain
         self.pdb = pdb.lower() if pdb else None
         self.identity = float(identity / 100)
         self.identifiers = []
         self.results = []
+        self.is_rna = is_rna
 
         try:
             self.seq = seq if seq else self.get_seq()
@@ -764,6 +765,7 @@ class SimilarChains(PDBeSolrSearch):
         raise SequenceException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
 
     def get_similar(self):
+        target = 'pdb_protein_sequence' if not self.is_rna else 'pdb_rna_sequence'
         query = """
 {
   "query": {
@@ -772,7 +774,7 @@ class SimilarChains(PDBeSolrSearch):
     "parameters": {
       "evalue_cutoff": 1,
       "identity_cutoff": %s,
-      "target": "pdb_protein_sequence",
+      "target": "%s",
       "value": "%s"
     }
   },
@@ -787,7 +789,7 @@ class SimilarChains(PDBeSolrSearch):
     ]
   }
 }               
-        """ % (self.identity, self.seq)
+        """ % (self.identity, target, self.seq)
         url = "https://search.rcsb.org/rcsbsearch/v2/query?json={0}".format(urllib.parse.quote(query))
         try:
             response = requests.get(url)
@@ -806,11 +808,13 @@ class SimilarChains(PDBeSolrSearch):
     def translate_enity_ids_to_chains(self):
         if not self.identifiers:
             return
-        ident_list = self.identifiers[0]
+        ident_list = self.identifiers[0].lower()
         for entr_ent in self.identifiers[1:]:
             ident_list += ' OR ' + entr_ent.lower()
+        #'(' + ident_list + ')'
+        #ident_list = PDBeSolrSearch.join_with_OR(self.identifiers)
         documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition",
-                                    [('entry_entity', '(' + ident_list + ')')])
+                                    [('entry_entity', ident_list)])
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
