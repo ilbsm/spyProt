@@ -645,12 +645,13 @@ class PDBeSolrSearch:
     @staticmethod
     def join_with_OR(selectors):
         return " OR ".join(
-            ["%s:%s" % (k, v) for k, v in selectors]
+            ["%s:\"%s\"" % (k, v) for k, v in selectors]
         )
 
     def exec_query(self, field_list, query_details):
         try:
             query = {"rows": UNLIMITED_ROWS, "fl": field_list, "q": self.join_with_AND(query_details)}
+            #query = {"rows": UNLIMITED_ROWS, "fl": field_list, "q": query_details}
             response = self.solr.search(**query)
             documents = response.docs
             if DEBUG:
@@ -811,13 +812,13 @@ class SimilarChains(PDBeSolrSearch):
         ident_list = self.identifiers[0].lower()
         for entr_ent in self.identifiers[1:]:
             ident_list += ' OR ' + entr_ent.lower()
-        #'(' + ident_list + ')'
-        #ident_list = PDBeSolrSearch.join_with_OR(self.identifiers)
         documents = self.exec_query("pdb_id,entity_id,chain_id,assembly_composition",
-                                    [('entry_entity', ident_list)])
+                                    [('entry_entity', '(' + ident_list + ')')])
         for i in range(len(documents)):
             pid = documents[i]['pdb_id']
             chain_id = documents[i]['chain_id']
+            if self.pdb and self.chain and pid.upper() == self.pdb.upper() and sorted(chain_id)[0] == self.chain:
+                continue
             self.results.append((pid.upper(), sorted(chain_id)[0]))
 
     def get(self):
@@ -876,7 +877,7 @@ class ReleasedPDBs(PDBeSolrSearch):
             entity_id = documents[i]['entity_id']
             mol_type = documents[i]['molecule_type'] if 'molecule_type' in documents[i] else None
             if uniq_chains:
-                res = [pid, sorted(chain_id)[0] if chain_id else None]
+                res = tuple([pid, sorted(chain_id)[0] if chain_id else None])
                 if with_entity_id:
                     res.insert(1, entity_id)
                 if with_molecule_type:

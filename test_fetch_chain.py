@@ -45,7 +45,7 @@ def test_fetchChainInfo_UniqueChains_3():
 
 def test_fetchChainInfo_SimilarChains():
     sim = SimilarChains(seq="GGAGCAUCGAGGCAGAGCAGUACCCUUCUGGGUCUGCGCCAACACCAACUGGAUCUGAACUGGC", is_rna=True)
-    print(sim.get())
+    assert str(sim.get()) == "[('6ZJ3', 'LK')]"
     sim = SimilarChains(pdb='1j85', chain='A')
     assert str(
         sim.get()) == "[('1MXI', 'A'), ('3N4J', 'A'), ('3N4K', 'A'), ('4JAK', 'A'), ('4JAL', 'A'), ('4KDZ', 'A'), ('6QH8', 'A'), ('7D51', 'A'), ('7E3S', 'A')]"
@@ -53,8 +53,6 @@ def test_fetchChainInfo_SimilarChains():
     assert len(sim.get()) >= 3
     sim = SimilarChains(pdb='7css', chain='A')
     assert len(sim.get()) == 0
-    sim = SimilarChains(seq="GGAGCAUCGAGGCAGAGCAGUACCCUUCUGGGUCUGCGCCAACACCAACUGGAUCUGAACUGGC", is_rna=True)
-    print(sim.get())
 
 
 def test_fetchChainInfo_SimilarChains_fail():
@@ -144,3 +142,9 @@ def test_UniprotSearch_query():
     res = uni.get(as_dict=False)
     #assert str(res[10]) == "['Acinetobacter baumannii 573719', '1310759', 'Acinetobacter baumannii (species), Acinetobacter calcoaceticus/baumannii complex (no rank), Acinetobacter (genus), Moraxellaceae (family), Moraxellales (order), Gammaproteobacteria (class), Proteobacteria (phylum), Bacteria (superkingdom), cellular organisms (no rank)', '470 (species), 909768 (no rank), 469 (genus), 468 (family), 2887326 (order), 1236 (class), 1224 (phylum), 2 (superkingdom), 131567 (no rank)']"
     assert str(res).find("['Acinetobacter sp. 1564232', '1310723', 'cellular organisms (no rank), Bacteria (superkingdom), Pseudomonadota (phylum), Gammaproteobacteria (class), Moraxellales (order)") > 0
+
+
+#test_fetchChainInfo_ReleasedProteins()
+#test_fetchChainInfo_ReleasedProteins_2()
+
+test_fetchChainInfo_SimilarChains()
