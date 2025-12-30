@@ -138,13 +138,14 @@ def test_UniprotSearch_array():
 
 def test_UniprotSearch_query():
     uni = UniprotSearch(
-        ['organism_name', 'organism_id', 'lineage', 'lineage_ids'], query='((organism_id:1310759) OR (organism_id:1310723))')
+        ['organism_name', 'organism_id', 'lineage', 'lineage_ids'], query='((taxonomy_id:2051550) OR (taxonomy_id:32610))')
     res = uni.get(as_dict=False)
+    #print(res)
     #assert str(res[10]) == "['Acinetobacter baumannii 573719', '1310759', 'Acinetobacter baumannii (species), Acinetobacter calcoaceticus/baumannii complex (no rank), Acinetobacter (genus), Moraxellaceae (family), Moraxellales (order), Gammaproteobacteria (class), Proteobacteria (phylum), Bacteria (superkingdom), cellular organisms (no rank)', '470 (species), 909768 (no rank), 469 (genus), 468 (family), 2887326 (order), 1236 (class), 1224 (phylum), 2 (superkingdom), 131567 (no rank)']"
-    assert str(res).find("['Acinetobacter sp. 1564232', '1310723', 'cellular organisms (no rank), Bacteria (superkingdom), Pseudomonadota (phylum), Gammaproteobacteria (class), Moraxellales (order)") > 0
+    assert str(res).find("['Cabbage cytorhabdovirus 1', '2051550', 'Viruses (no rank), Riboviria (realm), Orthornavirae (kingdom), Negarnaviricota (phylum), Haploviricotina (subphylum), Monjiviricetes (class), Mononegavirales (order), Rhabdoviridae (family), Betarhabdovirinae (subfamily), Cytorhabdovirus (genus), Cytorhabdovirus brassicicolae (species)', '10239 (no rank), 2559587 (realm), 2732396 (kingdom), 2497569 (phylum), 2497570 (subphylum), 2497574 (class), 11157 (order), 11270 (family), 2842408 (subfamily), 11305 (genus), 2734379 (species)']") > 0
 
 
 #test_fetchChainInfo_ReleasedProteins()
 #test_fetchChainInfo_ReleasedProteins_2()
 
-test_fetchChainInfo_SimilarChains()
+#test_fetchChainInfo_SimilarChains()
