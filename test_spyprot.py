@@ -1,5 +1,7 @@
 import warnings
 
+import pytest
+
 from spyprot import getCath
 from spyprot.fetchPDBinfo import fetchPDBinfo
 from spyprot.fetchAnnotations import PfamAnnotation, ECAnnotation
@@ -30,7 +32,7 @@ def test_fetch_pdb_info():
         a = fetchPDBinfo("1uak", "A")
         assert str(a.getCalfaBreaks()) == '[162, 172]'
 
-
+@pytest.mark.skip(reason="CDD server is down")
 def test_cddf_parser():
     d = getCath("1j85", "A")
     assert d[0]['DOMAIN'] == '1j85A00' and d[0]['CATHCODE'] == '3.40.1280.10' and d[0]['CLASS'] == 'Alpha Beta'
