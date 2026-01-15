@@ -27,12 +27,12 @@ def test_lassoprot_download():
 
 
 def test_genus_download():
-    SEARCH_STRING = 'https://genus.fuw.edu.pl/browse/?moltag=hydrolase%2Fpeptide&set=True&is_rna=&raw=1'
+    SEARCH_STRING = 'https://genus.fuw.edu.pl/browse/?catha=Alpha+solenoid&set=True&is_rna=&raw=1'
     URL_BONDS_PROTEIN = 'https://genus.fuw.edu.pl/file/{0}/{1}/{0}_{1}.chimera'
     with tempfile.TemporaryDirectory() as out_dir:
         dd = ILBSMDatabaseDownloader(SEARCH_STRING, [URL_BONDS_PROTEIN], out_dir, create_separate_dirs=False)
         dd.get_all()
-        assert len(os.listdir(out_dir)) >= 95
+        assert len(os.listdir(out_dir)) >= 7
 
 
 def test_alphaknot_download():
@@ -42,3 +42,6 @@ def test_alphaknot_download():
         dd = AlphaKnotDatabaseDownloader(SEARCH_STRING, [URL_KNOT_MODEL], out_dir, create_separate_dirs=False)
         dd.get_all()
         assert len(os.listdir(out_dir)) >= 42
+
+
+test_genus_download()

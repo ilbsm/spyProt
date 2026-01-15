@@ -158,4 +158,4 @@ def test_UniprotSearch_query():
 #test_fetchChainInfo_ReleasedProteins_2()
 
 #test_fetchChainInfo_SimilarChains()
-test_fetchChainInfo_ReleasedProteinsWithEntityId()
+#test_fetchChainInfo_ReleasedProteinsWithEntityId()
