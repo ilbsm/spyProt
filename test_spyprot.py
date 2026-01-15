@@ -12,6 +12,7 @@ from spyprot.fetchAnnotations import PfamAnnotation, ECAnnotation
 #     assert str(a.get()[0]) =="['1j85', 'A', '2', '142', 'PF00588.18', 'SpoU_methylase', 'SpoU rRNA Methylase family', '4.3E-32']"
 
 
+@pytest.mark.skip(reason="EC server is not reliable")
 def test_get_ec_annotations():
     a = ECAnnotation("1cak", "A")
     assert str(a.get()) == "[('4.2.1.1', 'carbonic anhydrase.'), ('4.2.1.69', 'cyanamide hydratase.')]"
