@@ -10,6 +10,9 @@ jobs:
   build:
     #name: Create Release
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/spyprot
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,3 +47,5 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
