@@ -879,7 +879,9 @@ class ReleasedPDBs(PDBeSolrSearch):
             if uniq_chains:
                 res = tuple([pid, sorted(chain_id)[0] if chain_id else None])
                 if with_entity_id:
-                    res.insert(1, entity_id)
+                    r = list(res)
+                    r.insert(1, entity_id)
+                    res = tuple(r)
                 if with_molecule_type:
                     res.append(mol_type)
                 self.results.append(res)
