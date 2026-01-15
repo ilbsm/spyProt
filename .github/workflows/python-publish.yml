@@ -24,8 +24,7 @@ jobs:
 
       - name: Install build env
         run: >-
-          python3 -m pip install --upgrade pip
-          pip install wheel scikit_build
+          python3 -m pip install wheel scikit_build
           --user
       - name: Build a binary wheel and a source tarball
         run:
