@@ -5,10 +5,47 @@ name: Upload Python Package
 
 on:
   release:
-    types: [created]
+    - published # This triggers the workflow when a release is published
 
 # .github/workflows/ci-cd.yml
 jobs:
+  build:
+    #name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create Release actually
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+          draft: false
+          prerelease: false
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install build env
+        run: >-
+          python3 -m
+          pip install
+          wheel scikit_build
+          --user
+      - name: Build a binary wheel and a source tarball
+        run: python3 setup.py bdist_wheel
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
