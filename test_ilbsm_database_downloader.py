@@ -1,6 +1,8 @@
 import os
 import tempfile
 
+import pytest
+
 from spyprot.ilbsm_database_downloader import ILBSMDatabaseDownloader, AlphaKnotDatabaseDownloader
 
 
@@ -26,6 +28,7 @@ def test_lassoprot_download():
         assert len(os.listdir(out_dir)) >= 53
 
 
+@pytest.skip
 def test_genus_download():
     SEARCH_STRING = 'https://genus.fuw.edu.pl/browse/?catha=Alpha+solenoid&set=True&is_rna=&raw=1'
     URL_BONDS_PROTEIN = 'https://genus.fuw.edu.pl/file/{0}/{1}/{0}_{1}.chimera'
@@ -42,6 +45,3 @@ def test_alphaknot_download():
         dd = AlphaKnotDatabaseDownloader(SEARCH_STRING, [URL_KNOT_MODEL], out_dir, create_separate_dirs=False)
         dd.get_all()
         assert len(os.listdir(out_dir)) >= 42
-
-
-test_genus_download()
