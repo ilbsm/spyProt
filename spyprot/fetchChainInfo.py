@@ -877,14 +877,12 @@ class ReleasedPDBs(PDBeSolrSearch):
             entity_id = documents[i]['entity_id']
             mol_type = documents[i]['molecule_type'] if 'molecule_type' in documents[i] else None
             if uniq_chains:
-                res = tuple([pid, sorted(chain_id)[0] if chain_id else None])
+                res = [pid, sorted(chain_id)[0] if chain_id else None]
                 if with_entity_id:
-                    r = list(res)
-                    r.insert(1, entity_id)
-                    res = tuple(r)
+                    res.insert(1, entity_id)
                 if with_molecule_type:
                     res.append(mol_type)
-                self.results.append(res)
+                self.results.append(tuple(res))
             else:
                 if pid not in self.results:
                     self.results.append(pid)
