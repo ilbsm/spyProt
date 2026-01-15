@@ -28,7 +28,7 @@ def test_lassoprot_download():
         assert len(os.listdir(out_dir)) >= 53
 
 
-@pytest.skip
+@pytest.mark.skip(reason="Genus DB is not reliable")
 def test_genus_download():
     SEARCH_STRING = 'https://genus.fuw.edu.pl/browse/?catha=Alpha+solenoid&set=True&is_rna=&raw=1'
     URL_BONDS_PROTEIN = 'https://genus.fuw.edu.pl/file/{0}/{1}/{0}_{1}.chimera'
