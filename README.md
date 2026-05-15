@@ -1,3 +1,5 @@
+![spyProt logo](https://github.com/ilbsm/spyprot/raw/master/assets/spyprot_logo_mini.png)
+
 # spyProt 
 
 [![Python package](https://github.com/ilbsm/spyProt/actions/workflows/python-package.yml/badge.svg)](https://github.com/ilbsm/spyProt/actions/workflows/python-package.yml)

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+    <rect x="10" y="10" width="280" height="280" rx="48" fill="#1F2A47"/>
+
+    <!-- Magnifier lens -->
+    <circle cx="135" cy="135" r="80" fill="#0E1426" stroke="#F2C14E" stroke-width="10"/>
+
+    <defs>
+      <clipPath id="lens">
+        <circle cx="135" cy="135" r="74"/>
+      </clipPath>
+    </defs>
+
+    <!-- Folded protein ribbon: clean, compact path with 3 visible "lobes" — reads as a folded chain -->
+    <g clip-path="url(#lens)">
+      <!-- Outline (darker) -->
+      <path d="M 85 165
+               C 70 130, 95 90, 130 95
+               C 165 100, 175 140, 145 145
+               C 115 150, 100 115, 130 110
+               C 160 105, 185 130, 175 165
+               C 165 195, 125 195, 110 175"
+            fill="none" stroke="#1F2A47" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Colored teal ribbon -->
+      <path d="M 85 165
+               C 70 130, 95 90, 130 95
+               C 165 100, 175 140, 145 145
+               C 115 150, 100 115, 130 110
+               C 160 105, 185 130, 175 165
+               C 165 195, 125 195, 110 175"
+            fill="none" stroke="#2EBAA8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Endpoint balls (N- and C-termini) -->
+      <circle cx="85"  cy="165" r="8" fill="#C84A7C" stroke="#1F2A47" stroke-width="2"/>
+      <circle cx="110" cy="175" r="8" fill="#F2C14E"   stroke="#1F2A47" stroke-width="2"/>
+    </g>
+
+    <!-- Lens highlight (drawn AFTER the protein so it sits on the glass) -->
+    <path d="M 90 105 Q 100 85 130 80" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.35"/>
+
+    <!-- Magnifier handle -->
+    <line x1="193" y1="193" x2="252" y2="252"
+          stroke="#F2C14E" stroke-width="20" stroke-linecap="round"/>
+    <line x1="196" y1="196" x2="248" y2="248"
+          stroke="#5B3B8C" stroke-width="8" stroke-linecap="round"/>
+  </svg>
