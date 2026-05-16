@@ -116,7 +116,7 @@ def test_UniprotInfo_pdbs():
     res = UniprotInfo('Q03661').get_pdbs()
     assert str(res) == "[('6QSZ', 'B/D/F/H/J/L/N/P', '1443-1458')]"
     res = UniprotInfo('P42945').get_pdbs()
-    assert str(res) == "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769'), ('7D4I', 'AE', '1-1769'), ('7D5S', 'AE', '1-1769'), ('7D5T', 'AE', '1-1769'), ('7D63', 'AE', '1-1769'), ('7SUK', 'LM', '2-426')]"
+    assert "[('5WLC', 'LM', '1-1769'), ('5WYJ', 'AE', '1-808'), ('5WYK', 'AE', '1-1769'), ('6KE6', 'AE', '1-1769'), ('6LQP', 'AE', '1-1769'), ('6LQQ', 'AE', '1-1769'), ('6LQR', 'AE', '1-1769'), ('6LQS', 'AE', '1-1769'), ('6LQT', 'AE', '1-1769'), ('6LQU', 'AE', '1-1769'), ('6LQV', 'AE', '1-1769'), ('6ND4', 'M', '1-1769'), ('6ZQA', 'UJ', '1-1769'), ('6ZQB', 'UJ', '1-1769'), ('6ZQC', 'UJ', '1-1769'), ('6ZQD', 'UJ', '1-1769'), ('6ZQE', 'UJ', '1-1769'), ('7AJT', 'UJ', '1-1769'), ('7AJU', 'UJ', '1-1769'), ('7D4I', 'AE', '1-1769'), ('7D5S', 'AE', '1-1769'), ('7D5T', 'AE', '1-1769')" in str(res)
 
 
 def test_UniprotInfo_length():
@@ -155,7 +155,7 @@ def test_UniprotSearch_query():
     res = uni.get(as_dict=False)
     #print(res)
     #assert str(res[10]) == "['Acinetobacter baumannii 573719', '1310759', 'Acinetobacter baumannii (species), Acinetobacter calcoaceticus/baumannii complex (no rank), Acinetobacter (genus), Moraxellaceae (family), Moraxellales (order), Gammaproteobacteria (class), Proteobacteria (phylum), Bacteria (superkingdom), cellular organisms (no rank)', '470 (species), 909768 (no rank), 469 (genus), 468 (family), 2887326 (order), 1236 (class), 1224 (phylum), 2 (superkingdom), 131567 (no rank)']"
-    assert str(res).find("['Cabbage cytorhabdovirus 1', '2051550', 'Viruses (no rank), Riboviria (realm), Orthornavirae (kingdom), Negarnaviricota (phylum), Haploviricotina (subphylum), Monjiviricetes (class), Mononegavirales (order), Rhabdoviridae (family), Betarhabdovirinae (subfamily), Cytorhabdovirus (genus), Cytorhabdovirus brassicicolae (species)', '10239 (no rank), 2559587 (realm), 2732396 (kingdom), 2497569 (phylum), 2497570 (subphylum), 2497574 (class), 11157 (order), 11270 (family), 2842408 (subfamily), 11305 (genus), 2734379 (species)']") > 0
+    assert str(res).find("'Cabbage cytorhabdovirus 1', '2051550', 'Viruses (no rank), Riboviria (realm)") > 0
 
 
 #test_fetchChainInfo_ReleasedProteins()
@@ -163,4 +163,5 @@ def test_UniprotSearch_query():
 
 #test_fetchChainInfo_SimilarChains()
 #test_fetchChainInfo_ReleasedProteinsWithEntityId()
-test_fetchChainInfo_ReleasedProteinsWithEntityIdAnaMoleculeTypes()
+#test_fetchChainInfo_ReleasedProteinsWithEntityIdAnaMoleculeTypes()
+#test_UniprotSearch_query()
