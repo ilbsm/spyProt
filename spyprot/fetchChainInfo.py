@@ -796,10 +796,9 @@ class SimilarChains(PDBeSolrSearch):
 
     def get_seq(self):
         documents = self.exec_query("pdb_id,entity_id,chain_id,molecule_sequence", [('pdb_id', self.pdb)])
-        for i in range(len(documents)):
-            chain_id = documents[i]['chain_id']
-            if self.chain in chain_id:
-                return documents[i]['molecule_sequence']
+        for document in documents:
+            if self.chain in document.get('chain_id', []):
+                return document['molecule_sequence']
         raise SequenceException('SimilarChains: Error getting sequence from PDBe for: %s, %s' % (self.pdb, self.chain))
 
     def get_similar(self):

@@ -54,6 +54,27 @@ def test_fetchChainInfo_SimilarChains():
     assert len(sim.get()) >= 3
     sim = SimilarChains(pdb='7css', chain='A')
     assert len(sim.get()) == 0
+    with pytest.raises(SearchException, match=r'Error getting sequence from PDBe for: 5zd5, D'):
+        SimilarChains(pdb='5zd5', chain='D')
+
+
+def test_fetchChainInfo_SimilarChains_missing_chain_id(monkeypatch):
+    monkeypatch.setattr(SimilarChains, 'exec_query', lambda self, *args: [{'pdb_id': '5zd5'}])
+
+    with pytest.raises(SearchException, match=r'Error getting sequence from PDBe for: 5zd5, D'):
+        SimilarChains(pdb='5zd5', chain='D')
+
+
+def test_fetchChainInfo_SimilarChains_skips_missing_chain_id(monkeypatch):
+    documents = [
+        {'pdb_id': '5zd5'},
+        {'chain_id': ['D'], 'molecule_sequence': 'ABCDEFGHIJK'},
+    ]
+    monkeypatch.setattr(SimilarChains, 'exec_query', lambda self, *args: documents)
+    monkeypatch.setattr(SimilarChains, 'get_similar', lambda self: None)
+    monkeypatch.setattr(SimilarChains, 'translate_enity_ids_to_chains', lambda self: None)
+
+    assert SimilarChains(pdb='5zd5', chain='D').seq == 'ABCDEFGHIJK'
 
 
 def test_fetchChainInfo_SimilarChains_fail():
