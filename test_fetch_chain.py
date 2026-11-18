@@ -58,6 +58,41 @@ def test_fetchChainInfo_SimilarChains():
         SimilarChains(pdb='5zd5', chain='D')
 
 
+def test_fetchChainInfo_SimilarChains_retries_transient_responses(monkeypatch):
+    sessions = []
+
+    class Response:
+        status_code = 200
+        text = '{}'
+
+        @staticmethod
+        def json():
+            return {}
+
+    class Session:
+        def __init__(self):
+            sessions.append(self)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def mount(self, prefix, adapter):
+            self.retries = adapter.max_retries
+
+        def get(self, url):
+            return Response()
+
+    monkeypatch.setattr('spyprot.fetchChainInfo.requests.Session', Session)
+
+    SimilarChains(seq='ABCDEFGHIJK')
+
+    assert sessions[0].retries.is_retry('GET', status_code=502)
+    assert sessions[0].retries.total == 5
+
+
 def test_fetchChainInfo_SimilarChains_missing_chain_id(monkeypatch):
     monkeypatch.setattr(SimilarChains, 'exec_query', lambda self, *args: [{'pdb_id': '5zd5'}])
 
