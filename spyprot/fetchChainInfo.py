@@ -829,7 +829,10 @@ class SimilarChains(PDBeSolrSearch):
         """ % (self.identity, target, self.seq)
         url = "https://search.rcsb.org/rcsbsearch/v2/query?json={0}".format(urllib.parse.quote(query))
         try:
-            response = requests.get(url)
+            with requests.Session() as session:
+                retries = Retry(total=5, backoff_factor=0.25, status_forcelist=[500, 502, 503, 504])
+                session.mount("https://", HTTPAdapter(max_retries=retries))
+                response = session.get(url)
             if response.status_code == 204 and response.text == '':
                 return
             if response.status_code != 200:
