@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="spyprot",
-    version='1.1.2',
+    version='1.1.4',
     author="INTERDISCIPLINARY LABORATORY of BIOLOGICAL SYSTEMS MODELLING, University of Warsaw, Warsaw, Poland",
     author_email="bmjastrzebski@gmail.com, p.rubach@cent.uw.edu.pl",
     description="This package provides a set of tools for accessing protein databases and manipulating PDB/CIF files.",
@@ -28,7 +28,6 @@ setup(
         'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: 3.14',
-        'Programming Language :: Python :: 3.15',
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent"
     ],
