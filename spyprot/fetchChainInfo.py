@@ -12,8 +12,7 @@ from itertools import count, groupby
 from requests.adapters import HTTPAdapter, Retry
 
 import requests
-from Bio.PDB import MMCIFIO, Select, PDBParser, PDBIO
-from Bio.PDB.MMCIFParser import MMCIFParser
+import gemmi
 from pysolr import Solr
 import logging, sys
 
@@ -118,7 +117,7 @@ class ProteinFile:
         self.chain = chain
         self.dir = dir
         self.atom = atom
-        self.filter_by_atom = filter_by_atom
+        self.filter_atom = filter_by_atom
         self.preserve_seqid = preserve_seqid
         self.pdbdata = []
         self.crystlen = -1
@@ -139,11 +138,18 @@ class ProteinFile:
 
     def _get_structure(self):
         if not self.structure:
-            self.structure = self._get_parser().get_structure(self.pdbcode, self.data_file)
+            self.structure = gemmi.read_structure(self.data_file)
         return self.structure
 
-    def _get_parser(self):
-        return self.parser
+    @staticmethod
+    def _get_atom(residue, atom_name):
+        atoms = [atom for atom in residue if atom.name == atom_name]
+        return max(atoms, key=lambda atom: atom.occ) if atoms else None
+
+    def _get_chains(self):
+        for model in self._get_structure():
+            for chain in model:
+                yield chain
 
     @staticmethod
     def _get_file(url, file):
@@ -159,20 +165,20 @@ class ProteinFile:
 
     def get_pdb_data(self):
         first_resid = -1
-        for ch in self._get_structure().get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if self.atom in residue.child_dict:
+        for ch in self._get_chains():
+            if ch.name == self.chain:
+                for residue in ch:
+                    if self._get_atom(residue, self.atom):
                         first_resid = self._get_seqid_from_residue(residue)
                         break
         prev_seqid = first_resid - 9999999999999
-        for ch in self._get_structure().get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if self.atom in residue.child_dict:
+        for ch in self._get_chains():
+            if ch.name == self.chain:
+                for residue in ch:
+                    atom = self._get_atom(residue, self.atom)
+                    if atom:
                         # Filter HETATM other than those in ALLOWED_HETATM
-                        if not residue.id[0].strip() == '' or (
-                                residue.id[0].strip().startswith('H_') and residue.resname not in ALLOWED_HETATM):
+                        if residue.het_flag != 'A' and residue.name not in ALLOWED_HETATM:
                             continue
                         seq_id = self._get_seqid_from_residue(residue)
                         if seq_id == prev_seqid:
@@ -184,8 +190,7 @@ class ProteinFile:
                                 'Gap in residues for %s %s between: %i and %i ' % (
                                 self.pdbcode, self.chain, prev_seqid, seq_id), SpyprotWarning,
                             )
-                        coords = [residue.child_dict[self.atom].coord[i] for i in
-                                  range(len(residue.child_dict[self.atom].coord))]
+                        coords = [atom.pos.x, atom.pos.y, atom.pos.z]
                         line = [seq_id] + coords
                         if None not in line:
                             if self.preserve_seqid:
@@ -194,7 +199,7 @@ class ProteinFile:
                                 new_seqid = line[0] - first_resid + 1
                         prev_seqid = new_seqid
                         self.pdbdata.append(
-                            [new_seqid] + line[1:] + [residue.resname, residue.child_dict[self.atom].bfactor])
+                            [new_seqid] + line[1:] + [residue.name, atom.b_iso])
         self.crystlen = len(self.pdbdata)
         if self.crystlen == 0:
             return []
@@ -250,7 +255,7 @@ class ProteinFile:
                 f.write(o)
 
     def get_chains(self):
-        return [ch.get_id() for ch in self._get_structure().get_chains()]
+        return [ch.name for ch in self._get_chains()]
 
     def get_breaks(self):
         # check chain breaks
@@ -275,51 +280,85 @@ class ProteinFile:
         return brk
 
     def get_first_residue_id(self):
-        for ch in self._get_structure().get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    return residue.get_id()[1]
+        for ch in self._get_chains():
+            if ch.name == self.chain:
+                for residue in ch:
+                    return residue.seqid.num
         return 0
 
     def get_residue_list(self):
         residues = {}
-        for ch in self._get_structure().get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if residue.__dict__['resname'] != 'HOH':
-                        residues[residue.get_id()] = residue.__dict__['resname']
+        for ch in self._get_chains():
+            if ch.name == self.chain:
+                for residue in ch:
+                    if residue.name != 'HOH':
+                        hetero_flag = ' ' if residue.het_flag == 'A' else 'H_' + residue.name
+                        icode = ' ' if residue.seqid.icode == '\x00' else residue.seqid.icode
+                        residues[(hetero_flag, residue.seqid.num, icode)] = residue.name
         return residues
 
     def get_seq_one_letter_code(self):
         seq = ''
-        k = list(SEQ_CODE.keys())
-        for ch in self._get_structure().get_chains():
-            if ch.get_id() == self.chain:
-                for residue in ch.get_residues():
-                    if (residue.id[0].strip() == '' and self.atom in residue.child_dict.keys()) or (
-                            residue.id[0].strip().startswith('H_') and residue.resname in ALLOWED_HETATM) and (
-                            residue.child_dict[self.atom].altloc.strip() == '' or residue.child_dict[
-                        self.atom].altloc.strip() == 'A'):
+        for ch in self._get_chains():
+            if ch.name == self.chain:
+                for residue in ch:
+                    atom = self._get_atom(residue, self.atom)
+                    if atom and (residue.het_flag == 'A' or (
+                            residue.name in ALLOWED_HETATM and atom.altloc in ('\x00', 'A'))):
                         if self.atom == 'CA':
-                            if residue.resname in k:
-                                seq += SEQ_CODE[residue.resname]
+                            if residue.name in SEQ_CODE:
+                                seq += SEQ_CODE[residue.name]
                             else:
                                 seq += "X"
                         else:
-                            seq += residue.resname
+                            seq += residue.name
         return seq
 
+    def _write_filtered_structure(self, output, chain_id, atom_name=None):
+        filtered = gemmi.Structure()
+        filtered.name = self.pdbcode
+        for model in self._get_structure():
+            selected_model = gemmi.Model(str(model.num))
+            for chain in model:
+                if chain_id is not None and chain.name != chain_id:
+                    continue
+                selected_chain = gemmi.Chain(chain.name)
+                for residue in chain:
+                    if residue.name == 'HOH' or residue.het_flag != 'A':
+                        continue
+                    if atom_name is None:
+                        selected_chain.add_residue(residue.clone())
+                    else:
+                        atoms = [atom for atom in residue if atom.name == atom_name]
+                        if atoms:
+                            selected_residue = gemmi.Residue()
+                            selected_residue.name = residue.name
+                            selected_residue.seqid = residue.seqid
+                            selected_residue.het_flag = residue.het_flag
+                            selected_residue.subchain = residue.subchain
+                            selected_residue.entity_id = residue.entity_id
+                            selected_residue.entity_type = residue.entity_type
+                            for atom in atoms:
+                                selected_residue.add_atom(atom.clone())
+                            selected_chain.add_residue(selected_residue)
+                if len(selected_chain):
+                    selected_model.add_chain(selected_chain)
+            if len(selected_model):
+                filtered.add_model(selected_model)
+                break
+        if self.ext == '.pdb':
+            filtered.write_pdb(output)
+        else:
+            filtered.setup_entities()
+            filtered.make_mmcif_document().write_file(output)
+
     def filter_by_chain(self):
-        self.io.set_structure(self._get_structure())
         self.out_file = self.data_file.replace(self.ext, "_" + self.chain + self.ext)
-        self.io.save(self.out_file, ChainAndResidueSelect(self.chain))
-        del self.io
+        self._write_filtered_structure(self.out_file, self.chain)
 
     def filter_by_atom(self):
-        self.io.set_structure(self._get_structure())
         self.out_file = self.out_file.replace(self.ext, "_" + self.atom + self.ext)
-        self.io.save(self.out_file, ChainAndAtomSelect(chain=self.chain, atom=self.atom))
-        del self.io
+        self._write_filtered_structure(self.out_file, self.chain, self.atom)
 
     @staticmethod
     def convertToRanges(L):
@@ -327,51 +366,51 @@ class ProteinFile:
         return ["-".join(map(str, (g[0], g[-1])[:len(g)])) for g in G]
 
 
-class ChainAndResidueSelect(Select):
+class ChainAndResidueSelect:
     def __init__(self, chain, model=0, residue_out="HOH"):
         self.chain = chain
         self.model = model
         self.residue_out = residue_out
 
     def accept_model(self, model):
-        if model is None or (model is not None and model.id == self.model):
+        if model is None or (model is not None and model.num == self.model + 1):
             return True
         else:
             return False
 
     def accept_chain(self, chain):
-        if chain is None or (chain is not None and chain.id == self.chain):
+        if chain is None or (chain is not None and chain.name == self.chain):
             return True
         else:
             return False
 
     def accept_residue(self, residue):
-        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
+        if residue.name != self.residue_out and residue.het_flag == 'A':
             return True
         else:
             return False
 
 
-class ChainSelect(Select):
+class ChainSelect:
     def __init__(self, chain, model=1, residue_out="HOH"):
         self.chain = chain
         self.model = model
         self.residue_out = residue_out
 
     def accept_chain(self, chain):
-        if chain is None or (chain is not None and chain.id == self.chain):
+        if chain is None or (chain is not None and chain.name == self.chain):
             return True
         else:
             return False
 
     def accept_residue(self, residue):
-        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
+        if residue.name != self.residue_out and residue.het_flag == 'A':
             return True
         else:
             return False
 
 
-class ChainAndAtomSelect(Select):
+class ChainAndAtomSelect:
     def __init__(self, chain, model=1, residue_out="HOH", atom='CA'):
         self.chain = chain
         self.model = model
@@ -379,19 +418,19 @@ class ChainAndAtomSelect(Select):
         self.atom = atom
 
     def accept_chain(self, chain):
-        if chain is None or (chain is not None and chain.id == self.chain):
+        if chain is None or (chain is not None and chain.name == self.chain):
             return True
         else:
             return False
 
     def accept_residue(self, residue):
-        if residue.resname != self.residue_out and str(residue._id[0]).strip() == '':
+        if residue.name != self.residue_out and residue.het_flag == 'A':
             return True
         else:
             return False
 
     def accept_atom(self, atom):
-        if atom is None or (atom is not None and atom.get_name() == self.atom):
+        if atom is None or (atom is not None and atom.name == self.atom):
             return True
         else:
             return False
@@ -417,8 +456,6 @@ class PdbFile(ProteinFile):
         super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom,
                          preserve_seqid=preserve_seqid)
         self.data_file = path.join(self.dir, self.pdbcode + '.pdb')
-        self.parser = PDBParser()
-        self.io = PDBIO()
         self.ext = '.pdb'
 
     def download(self):
@@ -462,7 +499,9 @@ class PdbFile(ProteinFile):
                     self.parsePdbAndTranslateAllChains(self.dir + '/' + file, mapChainFiltered, file_num)
                     file_num = file_num + 1
                 self.data_file = self.out_files
-        if self.filter_by_atom:
+        if self.filter_atom:
+            if self.chain is None:
+                self.out_file = self.data_file
             self.filter_by_atom()
         return self.data_file
 
@@ -548,7 +587,7 @@ class PdbFile(ProteinFile):
     # def get_pdb_creation_date(self):
     #    return self.get_parser().header['deposition_date']
     def _get_seqid_from_residue(self, residue):
-        return int(residue.get_id()[1])
+        return int(residue.seqid.num)
 
 
 class MMCIFfile(ProteinFile):
@@ -556,8 +595,7 @@ class MMCIFfile(ProteinFile):
         super().__init__(dir=dir, pdbcode=pdbcode, chain=chain, atom=atom, filter_by_atom=filter_by_atom,
                          preserve_seqid=preserve_seqid)
         self.data_file = path.join(self.dir, self.pdbcode + ".cif")
-        self.parser = MMCIFParser()
-        self.io = MMCIFIO()
+        self.cif_document = None
         self.ext = '.cif'
 
     def download_only(self):
@@ -577,16 +615,19 @@ class MMCIFfile(ProteinFile):
             self.filter_by_chain()
         else:
             self.out_file = self.data_file
-        if self.filter_by_atom:
+        if self.filter_atom:
             self.filter_by_atom()
         return self.out_file
 
     def _get_seqid_from_residue(self, residue):
-        return int(self._get_parser()._mmcif_dict["_atom_site.label_seq_id"][
-                       residue.child_dict[self.atom].serial_number - 1])
+        return int(residue.label_seq or residue.seqid.num)
+
+    def _get_cif_block(self):
+        if self.cif_document is None:
+            self.cif_document = gemmi.cif.read_file(self.data_file)
+        return self.cif_document.sole_block()
 
     def get_pdb_creation_date(self):
-        # return self._get_parser()._mmcif_dict['_pdbx_database_status.recvd_initial_deposition_date'][0]
         return self.get_par_from_dict('_pdbx_database_status.recvd_initial_deposition_date')
 
     def get_meta_pubmed(self):
@@ -600,25 +641,21 @@ class MMCIFfile(ProteinFile):
         return (doi, pubmed_id, desc, title, src, key, molecutag)
 
     def get_par_from_dict(self, par):
-        # return self._get_parser()._mmcif_dict[par][0] if par in self._get_parser()._mmcif_dict else None
-        if par in self._get_parser()._mmcif_dict:
-            res = self._get_parser()._mmcif_dict[par]
-            if type(res) == str:
-                return res
-            elif type(res) == list:
-                return res[0]
-            else:
-                return 'coooooooo'
-        else:
-            return None
+        values = self._get_cif_block().find_values(par)
+        return gemmi.cif.as_string(values[0]) if len(values) else None
 
     def get_seq_one_letter_code_can(self):
-        model_id = -1
-        for model in self._get_structure().child_list:
-            for ch in model.child_list:
-                if ch.id == self.chain:
-                    model_id = model.id
-        return self.parser._mmcif_dict['_entity_poly.pdbx_seq_one_letter_code'][model_id].replace('\n', '')
+        chain = next((chain for chain in self._get_chains() if chain.name == self.chain), None)
+        if chain is None or not len(chain):
+            return ''
+        entity_id = chain[0].entity_id
+        block = self._get_cif_block()
+        entity_ids = list(block.find_values('_entity_poly.entity_id'))
+        sequences = list(block.find_values('_entity_poly.pdbx_seq_one_letter_code'))
+        for entity, sequence in zip(entity_ids, sequences):
+            if entity == entity_id:
+                return gemmi.cif.as_string(sequence).replace('\n', '')
+        return ''
 
 
 class SearchException(Exception):

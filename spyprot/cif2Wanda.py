@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from Bio.PDB.MMCIF2Dict import MMCIF2Dict
+import gemmi
 
 #######
 # Modified by Bartosz Gren, b.gren@cent.uw.edu.pl
@@ -288,15 +288,18 @@ def iterate_with_features(features, cifdict):
     if type(features) == str:
         features = [features]
     data = [get_feature(feature, cifdict) for feature in features]
-    return data
+    return zip(*data)
 
 ################################ Main part ################################
 ### search for chains and build chain classes
 def run_cif2Wanda(infile, work_dir, outfile):
     # ignored search for secondary structures
     # infile -- file name or handle
-    cifdict = MMCIF2Dict(infile) # in the rest of code please do not use "cifdict"
-                                 # use "get_features" or "iterate_with_features"
+    if hasattr(infile, 'read'):
+        cif_document = gemmi.cif.read_string(infile.read())
+    else:
+        cif_document = gemmi.cif.read_file(str(infile))
+    cif_block = cif_document.sole_block()
     # features, all names can be checked here https://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
     f_chains = '_struct_asym.id' # chain
     f_entities = '_entity.id'    # entity (unique chain)
@@ -335,8 +338,11 @@ def run_cif2Wanda(infile, work_dir, outfile):
     f_struct_list = [f_struct_chain, f_struct_seqid, f_struct_resid, 
                      f_struct_atom, f_struct_x, f_struct_y, f_struct_z]
 
+    features = set([f_chains, f_entities] + f_seq_list + f_link_list + f_struct_list)
+    cifdict = {feature: list(cif_block.find_values(feature)) for feature in features}
+
     ### fill the chain class information
-    entity_data = iterate_with_features(f_entities, f_chains)
+    entity_data = iterate_with_features([f_entities, f_chains], cifdict)
     chain_dict = {}
     for entity, chain in set(iter(entity_data)):
         if chain in chain_dict: 

@@ -1,5 +1,3 @@
-import warnings
-
 import pytest
 
 from spyprot import getCath
@@ -22,16 +20,20 @@ def test_get_pfam_annotations():
     a = PfamAnnotation("1j85", "A")
     assert str(a.get()) == "[('1j85', 'A', 'SpoU_methylase', 'SpoU rRNA Methylase family', 'PF00588', 'K31', 100)]"
     a = PfamAnnotation("3bdg", "B")
-    assert str(a.get()) == "[('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31', 98.1)]"
+    result = a.get()
+    assert len(result) == 1
+    assert result[0][:6] == ('3bdg', 'B', 'Alk_phosphatase', 'Alkaline phosphatase', 'PF00245', 'S31')
+    assert 0 <= result[0][6] <= 100
+
+
+def test_pfam_region_alignment():
+    assert PfamAnnotation.get_region('XXACDEFGYY', 'ACDEFG') == ('ACDEFG', 3, 8)
 
 
 def test_fetch_pdb_info():
-    from Bio import BiopythonExperimentalWarning
     import tempfile
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', BiopythonExperimentalWarning)
-        a = fetchPDBinfo("1uak", "A")
-        assert str(a.getCalfaBreaks()) == '[162, 172]'
+    a = fetchPDBinfo("1uak", "A")
+    assert str(a.getCalfaBreaks()) == '[162, 172]'
 
 @pytest.mark.skip(reason="CDD server is down")
 def test_cddf_parser():

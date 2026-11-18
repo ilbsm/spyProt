@@ -12,8 +12,7 @@ import urllib.request, json
 import re
 
 from requests import Session
-from Bio import pairwise2
-from Bio.Align import substitution_matrices
+import gemmi
 
 REFRESH_FILE_INTERVAL = 7 * 24 * 3600  # Refresh every week
 
@@ -307,25 +306,22 @@ class PfamAnnotation(AnnotationBase):
 
     @staticmethod
     def get_region(seq1, seq2):
-        matrix = substitution_matrices.load("BLOSUM62")
         try:
-            alignments = pairwise2.align.localds(seq1, seq2, matrix, -10,
-                                                 -0.5)  # czemu akurat te dane --> czy zmiana mialaby wplyw na alignment i przypisaną domene?
-            if alignments:
-                region = alignments[0][1]
-                protein = alignments[0][0]
-                i = 0
-                j = 0
-                if region[0] == "-":
-                    while region[i] == "-":
-                        i += 1
-                    region = region[i:]
-                if region[-1] == "-":
-                    while region[::-1][j] == "-":
-                        j += 1
-                    j = j * (-1)
-                    region = region[:j]
-                return region, i + 1, len(protein) - j * (-1)
+            alignment = gemmi.align_string_sequences(
+                list(seq1), list(seq2), [0] * len(seq2)
+            )
+            aligned = alignment.formatted(seq1, seq2).splitlines()
+            if alignment.score > 0 and len(aligned) >= 3:
+                protein, region = aligned[0], aligned[2]
+                columns = [
+                    index for index, (aa, residue) in enumerate(zip(protein, region))
+                    if aa != '-' and residue != '-'
+                ]
+                if columns:
+                    first, last = columns[0], columns[-1]
+                    aligned_start = sum(aa != '-' for aa in protein[:first]) + 1
+                    aligned_end = sum(aa != '-' for aa in protein[:last + 1])
+                    return region[first:last + 1], aligned_start, aligned_end
         except Exception as e:
             raise MyValidationError("error: problem with the alignment.\n" + str(e))
 

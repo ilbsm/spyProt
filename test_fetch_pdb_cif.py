@@ -41,10 +41,8 @@ def test_cif_parser_vs_xml():
                   ]
     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
     os.makedirs(dir, exist_ok=True)
-    from Bio import BiopythonWarning
     import warnings
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore', BiopythonWarning)
         for el in pdb_chains:
             print(el)
             pdb = el.split('_')[0]
@@ -95,10 +93,8 @@ def test_pdb_parser_vs_xml():
     pdb_chains = ['6az3_B', '6az3_e', '1j85_A', '6ki1_A']
     dir = os.path.join(tempfile.gettempdir(), 'test_pdb_xml')
     os.makedirs(dir, exist_ok=True)
-    from Bio import BiopythonWarning
     import warnings
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore', BiopythonWarning)
         for el in pdb_chains:
             pdb = el.split('_')[0]
             chain = el.split('_')[1]
@@ -135,10 +131,8 @@ def test_pdb_parser_vs_xml():
 #                   '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
 #     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
 #     os.makedirs(dir, exist_ok=True)
-#     from Bio import BiopythonWarning
 #     import warnings
 #     with warnings.catch_warnings():
-#         warnings.simplefilter('ignore', BiopythonWarning)
 #         for el in pdb_chains:
 #             pdb = el.split('_')[0]
 #             chain = el.split('_')[1]
@@ -157,10 +151,8 @@ def test_pdb_parser_vs_xml():
 #                   '6az3_2_C3\'', '6gaz_AA_C3\'', '4wf9_X_C3\'']
 #     dir = os.path.join(tempfile.gettempdir(), 'test_cif_xml')
 #     os.makedirs(dir, exist_ok=True)
-#     from Bio import BiopythonWarning
 #     import warnings
 #     with warnings.catch_warnings():
-#         warnings.simplefilter('ignore', BiopythonWarning)
 #         for el in pdb_chains:
 #             pdb = el.split('_')[0]
 #             chain = el.split('_')[1]
